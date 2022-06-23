@@ -1,4 +1,5 @@
 import serial
+from crc import crc16
 
 CMD_PARAMETROS      = 0xD6 # Leitura e escrita dos parametros de radio
 
@@ -32,7 +33,9 @@ CMD_LEITURA_PARAMETROS        = 0x00
 CMD_ESCRITA_PARAMETROS        = 0x01
 
 def lerLora(serial : serial.Serial):
-	serial.write(bytearray([0, 0, CMD_LEITURA_LOCAL, 0, 0, 0]))
+	mensagem_config = bytearray([0, 0, CMD_LEITURA_LOCAL, 0, 0, 0])
+	crc = bytearray(crc16(mensagem_config))
+	serial.write(mensagem_config + crc)
 	mensagem = serial.read(31)
 	if len(mensagem) == 0:
 		print("Erro ao ler o modulo")
