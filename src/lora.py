@@ -34,6 +34,10 @@ CMD_ESCRITA_PARAMETROS        = 0x01
 def lerLora(serial : serial.Serial):
 	serial.write(bytearray([0, 0, CMD_LEITURA_LOCAL, 0, 0, 0]))
 	mensagem = serial.read(31)
+	if len(mensagem) == 0:
+		print("Erro ao ler o modulo")
+		return
+	print('Chegou a mensagem: ' + mensagem)
 	id = bytearray([mensagem[0], mensagem[1]])
 	uid = bytearray([mensagem[5], mensagem[6], mensagem[7], mensagem[8]])
 	return id, uid
