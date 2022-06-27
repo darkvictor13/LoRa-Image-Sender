@@ -15,9 +15,12 @@ def main():
 		bytesize=serial.EIGHTBITS,
 		timeout=1
 	)
+	if ser.closed:
+		print("Erro ao abrir a porta serial")
+		return
 
-	_id, _uid = lerLora(ser)
-	print(_id, _uid)
+	id, uid = lerLora(ser)
+	print(id, uid)
 	#escreverLora(ser, _id, _uid)
 	#while True:
 		#enviaMensagemLora(ser, _id, mensagem)
