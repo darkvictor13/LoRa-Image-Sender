@@ -8,4 +8,6 @@ def crc16(data: bytearray) -> int:
 				crc = (crc >> 1) ^ 0xA001
 			else:
 				crc = (crc >> 1)
+
+	print('CRC de', data, '= ', hex(crc))
 	return crc

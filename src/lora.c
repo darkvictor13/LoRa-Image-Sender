@@ -11,6 +11,20 @@
 #include <termios.h>  // Contains POSIX terminal control definitions
 #include <unistd.h>   // write(), read(), close()
 
+typedef enum {
+  CMD_LORA_PARAMETER   = 0xD6,   /* Gets or Sets the LoRa modulation parameters */
+  CMD_LOCAL_READ       = 0xE2,   /* Gets the ID, NET and UNIQUE ID info from the local device */
+  CMD_REMOTE_READ      = 0xD4,   /* Gets the ID, NET and UNIQUE ID info from a remote device */
+  CMD_WRITE_CONFIG     = 0xCA,   /* Writes configuration info to the device, i.e. NET and ID */
+  CMD_GPIO_CONFIG      = 0xC2,   /* Configures a given GPIO pin to a desired mode, gets or sets its value */
+  CMD_DIAGNOSIS        = 0xE7,   /* Gets diagnosis information from the device */
+  CMD_READ_NOISE       = 0xD8,   /* Reads the noise floor on the current channel */
+  CMD_READ_RSSI        = 0xD5,   /* Reads the RSSI between the device and a neighbour */
+  CMD_TRACE_ROUTE      = 0xD2,   /* Traces the hops from the device to the master */
+  CMD_SEND_TRANSP      = 0x28    /* Sends a packet to the device's transparent serial port */
+} Cmd_Typedef;
+
+
 void ms_sleep(uint64_t ms) {
 	struct timespec ts;
 	ts.tv_sec = ms / 1000;
@@ -20,6 +34,8 @@ void ms_sleep(uint64_t ms) {
 
 #define CRC_POLY  (0xA001)
 #define CRC_BEGIN (0xC181)
+
+static const char *lora_port = "/dev/ttyS0";
 
 void print_hex(uint8_t *data, uint32_t len) {
 	for (uint8_t i = 0; i < len; i++) {
@@ -51,14 +67,34 @@ uint16_t crc16(uint8_t* data_in, uint32_t length) {
     return crc_calc;
 }
 
-// abre uma porta serial em /dev/ttyS0
+// abre uma porta serial
 int open_serial() {
-	int fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY | O_NONBLOCK);
+	int fd = open(lora_port, O_RDWR | O_NOCTTY | O_NONBLOCK);
 	if (fd < 0) {
 		printf("Erro ao abrir a porta serial\n");
 		exit(1);
 	} else {
 		printf("Porta serial aberta\n");
+	}
+	// configura a porta serial
+	struct termios tty;
+	memset(&tty, 0, sizeof tty);
+	if (tcgetattr(fd, &tty) != 0) {
+		printf("Erro ao obter configurações da porta serial\n");
+		exit(1);
+	}
+	cfsetospeed(&tty, B9600);
+	cfsetispeed(&tty, B9600);
+	// set 8 bits, no parity, no stop bits
+	tty.c_cflag &= ~PARENB;
+	tty.c_cflag &= ~CSTOPB;
+	tty.c_cflag &= ~CSIZE;
+	tty.c_cflag |= CS8;
+	
+	// aplica as configurações
+	if (tcsetattr(fd, TCSANOW, &tty) != 0) {
+		printf("Erro ao aplicar configurações da porta serial\n");
+		exit(1);
 	}
 	return fd;
 }
@@ -75,7 +111,7 @@ bool read_serial(int fd, uint8_t *buffer, int size_buffer) {
 			if (errno == EAGAIN) {
 				ms_sleep(100);
 			} else {
-				printf("Erro ao ler da porta serial\n");
+				printf("Erro ao ler da porta serial na funcao read\n");
 				memset(buffer, 0, size_buffer);
 				return false;
 			}
@@ -93,7 +129,7 @@ bool write_serial(int fd, uint8_t *buffer, uint32_t size_buffer) {
 	memcpy(message + size_buffer, &crc, sizeof(crc));
 	printf("Mensagem: ");
 	print_hex(message, size_message);
-	return write(fd, message, tam_mensagem) == size_message;
+	return write(fd, message, size_message) == size_message;
 }
 
 int main() {
@@ -101,7 +137,7 @@ int main() {
 	int serial = open_serial();
 	printf("FD = %d\n", serial);
 
-	uint8_t mensagem_config[] = {0, 0, 0xE2, 0, 0, 0};
+	uint8_t mensagem_config[] = {0, 0, CMD_LOCAL_READ, 0, 0, 0};
 	uint8_t tam_mensagem_config = sizeof(mensagem_config);
 	ret = write_serial(serial, mensagem_config, tam_mensagem_config);
 	if (!ret) {

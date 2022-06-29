@@ -1,5 +1,6 @@
 import serial
 from crc import crc16
+from time import sleep
 
 CMD_PARAMETROS      = 0xD6 # Leitura e escrita dos parametros de radio
 
@@ -31,21 +32,34 @@ CMD_CONFIG_INTERF_TRANSP      = 0x01
 CMD_LEITURA_PARAMETROS        = 0x00
 CMD_ESCRITA_PARAMETROS        = 0x01
 
-def lerLora(serial : serial.Serial):
-	mensagem_config = bytearray([0, 0, CMD_LEITURA_LOCAL, 0, 0, 0])
-	crc = bytearray(crc16(mensagem_config))
-	serial.write(mensagem_config + crc)
-	mensagem = serial.read(31)
-	if len(mensagem) == 0:
-		print("Erro ao ler o modulo")
-		return
-	print('Chegou a mensagem: ' + mensagem)
-	id = bytearray([mensagem[0], mensagem[1]])
-	uid = bytearray([mensagem[5], mensagem[6], mensagem[7], mensagem[8]])
-	return id, uid
+def criaLora() -> serial.Serial:
+	return serial.Serial(
+		port='/dev/ttyS0',
+		baudrate = 9600,
+		parity=serial.PARITY_NONE,
+		stopbits=serial.STOPBITS_ONE,
+		bytesize=serial.EIGHTBITS,
+		timeout=None
+	)
 
-def escreverLora(serial : serial.Serial, id : bytearray, uid : bytearray):
-	pass
+def lerLora(serial : serial.Serial):
+	print('Lendo Lora')
+	mensagem = bytearray([0, 0, CMD_LEITURA_LOCAL, 0, 0, 0])
+	crc = crc16(mensagem)
+	crc_lsb = int(crc % 256)
+	crc_msb = int(crc // 256)
+	mensagem.append(crc_lsb)
+	mensagem.append(crc_msb)
+	bytes_writhed = int(serial.write(mensagem))
+	print('Enviou', bytes_writhed, 'bytes')
+	if bytes_writhed != len(mensagem):
+		print('Erro ao escrever na serial')
+		return None, None
+	resposta = serial.read(31)
+	print('Chegou a mensagem:', resposta)
+	id  = bytearray([resposta[0], resposta[1]])
+	uid = bytearray([resposta[5], resposta[6], resposta[7], resposta[8]])
+	return id, uid
 
 def enviaMensagemLora(serial : serial.Serial, id : bytearray, mensagem : bytearray):
 	pass

@@ -7,21 +7,15 @@ from lora import *
 def main():
 	mensagem = bytearray([1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1])
 
-	ser = serial.Serial (
-		port='/dev/ttyS0',
-		baudrate = 9600,
-		parity=serial.PARITY_NONE,
-		stopbits=serial.STOPBITS_ONE,
-		bytesize=serial.EIGHTBITS,
-		timeout=1
-	)
+	ser = criaLora()
 	if ser.closed:
 		print("Erro ao abrir a porta serial")
 		return
+	else:
+		print("Porta serial aberta")
 
 	id, uid = lerLora(ser)
 	print(id, uid)
-	#escreverLora(ser, _id, _uid)
 	#while True:
 		#enviaMensagemLora(ser, _id, mensagem)
 		#print("Chegou mensagem " + str(verificaEnvioLora(ser)))
