@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include "packet.hpp"
 
 enum Cmd {
 	CMD_LORA_PARAMETER   = 0xD6,   /* Gets or Sets the LoRa modulation parameters */
@@ -12,7 +13,24 @@ enum Cmd {
 	CMD_READ_NOISE       = 0xD8,   /* Reads the noise floor on the current channel */
 	CMD_READ_RSSI        = 0xD5,   /* Reads the RSSI between the device and a neighbour */
 	CMD_TRACEROUTE       = 0xD2,   /* Traces the hops from the device to the master */
-	CMD_SEND_TRANSP      = 0x28    /* Sends a packet to the device's transparent serial port */
+	CMD_SEND_TRANSP      = 0x28,   /* Sends a packet to the device's transparent serial port */
+	CMD_PERIODIC_TIME	 = 0xCC,   /* Gets or sets the periodic time */
+	CMD_OPERATION_MODE   = 0xC1    /* Gets or sets the operation mode */
+};
+
+enum LoraParameter {
+	READ_PARAMETER,
+	WRITE_PARAMETER
+};
+
+enum PeriodicTime {
+	WRITE_PERIODIC_TIME = 1,
+	READ_PERIODIC_TIME
+};
+
+enum OperationMode {
+	OPERATION_INTERFACE,
+	TRANSPARENT_INTERFACE
 };
 
 enum BaudRate {
@@ -22,7 +40,7 @@ enum BaudRate {
 	BR115200
 };
 
-enum OperationMode {
+enum LoraClass {
 	CLASS_A,
 	ERROR,
 	CLASS_C
@@ -50,8 +68,23 @@ enum Window {
 	WINDOW_15S
 };
 
+union id_type {
+	uint16_t value;
+	uint8_t bytes[2];
+};
+
+union uid_type {
+	uint32_t value;
+	uint8_t bytes[4];
+};
+
+union periodic_test_time_type {
+	uint16_t value;
+	uint8_t bytes[2];
+};
+
 struct Config {
-	uint16_t id;
+	id_type id;
 	uint8_t potency;
 	uint8_t bandwidth; // Bandwidth
 	uint8_t spreading_factor; // SpreadFactor
@@ -59,29 +92,32 @@ struct Config {
 
 	uint8_t mask_config;
 	uint8_t baud_rate; // BaudRate
-	uint16_t periodic_test;
-	uint8_t operation_mode; // OperationMode
+	periodic_test_time_type periodic_test;
+	uint8_t lora_class;
 	uint8_t window; // Window
 	uint8_t transparent_mode;
 };
 
-uint16_t ComputeCRC(uint8_t* data_in, uint16_t length);
+uint16_t ComputeCRC(const uint8_t* data_in, uint16_t length);
 
 class LoraInterface {
 private:
 	HardwareSerial &serial;
+
 	Config conf;
-	uint32_t uid;
-	uint8_t FW;
-	uint8_t Canal;
-	uint8_t VersaoFW;
-	uint8_t BancoMemoria;
+	uid_type uid; // Identificador único do dispositivo
+	uint8_t firmware_revision;
+	uint8_t channel_number;
+	uint8_t firmware_version;
+	uint8_t memory; /// em qual banco de memoria o firmware esta gravado
 	//uint8_t TempMin,TempAtual,TempMax,VMin,VAtual,VMax,RuidoMin,RuidoMed,RuidoMax,RSSIIda,RSSIVolta,SNRIda,SNRVolta,IDGateway[2],IDRota[50]; // Diagnostico
 	//uint8_t CRC[2];
 
 
-	bool write(uint8_t* data, uint16_t length);
+	bool write(const uint8_t* data, uint16_t length);
+	bool write(const Packet &packet);
 	bool read(uint8_t* data, uint16_t length, uint16_t timeout_ms);
+	bool read(Packet &packet, uint16_t timeout_ms);
 public:
 	LoraInterface(HardwareSerial &serial = Serial);
 	LoraInterface(const Config &config, HardwareSerial &serial = Serial);
@@ -95,24 +131,39 @@ public:
 	void setMaskConfig(const uint8_t mask_config);
 	void setBaudRate(const uint8_t baud_rate);
 	void setPeriodicTest(const uint16_t periodic_test);
-	void setOperationMode(const uint8_t operation_mode);
+	void setClass(const uint8_t lora_class);
 	void setWindow(const Window window);
+
+	bool writeRadioConfig();
+	bool writeParameterConfig();
+	bool writePeriodicTestConfig();
+	bool writeOperationMode();
+	bool writeTransparentInterface();
 
 	/**
 	 * @brief Escreve todas as configurações salvas
 	 * na estrutura Config para o dispositivo.
 	 * 
+	 * @return true Se todas as configurações foram salvas com sucesso.
+	 * @return false Se alguma configuração não foi salva.
 	 * @pre estrutura config com dados validos
 	 * @post dispositivo configurado
 	 */
-	void writeConfig();
+	bool writeConfig();
 
-	bool readConfig();
+	bool commandInterface(uint8_t *command, uint16_t length_command, uint8_t *response, uint16_t length_response);
+
 	bool readRadioConfig();
 	bool readParameterConfig();
-	bool readDiagnosis();
+	bool readPeriodicTestConfig();
+	bool readOperationMode();
+	bool readRemote(const uint16_t id);
+	bool readConfig();
 
-	void printConfig();
+	void printConfig() const;
+
+	bool writeData(const uint8_t* data, uint16_t length);
+	bool readData(uint8_t* data, uint16_t length, uint16_t timeout_ms);
 
 	~LoraInterface();
 };

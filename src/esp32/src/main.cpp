@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #include "lora_interface.hpp"
+#include "lora_joao.hpp"
+#include "scoped_timer.hpp"
 
 /*
 	Codigo para testar LSB e MSB
@@ -15,8 +17,18 @@
 */
 
 void setup() {
+	SET_TIMER_DEFAULT;
 	LoraInterface lora;
 	lora.printConfig();
+	lora.setId(1);
+	const auto ret = lora.writeRadioConfig();
+	lora.printConfig();
+	Serial.printf("Escrita de config: %s\n", ret ? "OK" : "ERRO");
+	/*
+	LoRa lora;
+	lora.LeituraConfiguracoesLoRa();
+	lora.debugConfiguracoesLoRa();
+	*/
 }
 
 void loop() {
