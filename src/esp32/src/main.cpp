@@ -19,19 +19,19 @@
 void setup() {
 	SET_TIMER_DEFAULT;
 	Serial.begin(115200);
-	LoraInterface lora(Serial2);
 	/*
+	LoraInterface lora(Serial2);
 	lora.setId(0x00CC);
 	if (!lora.writeConfig()) {
 		Serial.println("Erro ao escrever configurações");
 		while (1);
 	}
-	*/
 	lora.printConfig();
-	/*
+	*/
 	LoRa lora;
 	lora.LeituraConfiguracoesLoRa();
 	lora.debugConfiguracoesLoRa();
+	/*
 	const auto ret = lora.writeRadioConfig();
 	lora.printConfig();
 	Serial.printf("Escrita de config: %s\n", ret ? "OK" : "ERRO");
