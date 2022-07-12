@@ -1,6 +1,9 @@
 #include "lora_joao.hpp"
 
-#define SerialLoRa Serial
+#define SerialLoRa Serial2
+#define SerialDebug Serial
+#define LORA_RX 25
+#define LORA_TX 27
 
 void LoRa::CalculaCRC(uint8_t* data_in, uint16_t length) {
     uint16_t i;
@@ -31,19 +34,22 @@ void LoRa::PrintLora(uint8_t* BytesLoRa, int Tamanho) {
     BytesLoRa[Tamanho + 1] = CRC[MSB];
 
     int i;
+	SerialDebug.print("Bytes Escritos: ");
     for (i = 0; i < Tamanho + 2; i++) {
         SerialLoRa.write(BytesLoRa[i]);  // 02- Codigo
+		SerialDebug.print(" 0x");
+		SerialDebug.print(BytesLoRa[i], HEX);
     }
+	SerialDebug.println();
     // SerialLoRa.write(CRC[LSB]);       // CRC (LSB)
     // SerialLoRa.write(CRC[MSB]);       // CRC (MSB)
-    delay(1000);
-    Serial.println();
-    Serial.print("Escrita: ");
+    SerialDebug.println();
+    SerialDebug.print("Escrita: ");
     for (int i = 0; i < Tamanho + 2; i++) {
-        Serial.print(" 0x");
-        Serial.print(BytesLoRa[i], HEX);
+        SerialDebug.print(" 0x");
+        SerialDebug.print(BytesLoRa[i], HEX);
     }
-    Serial.println();
+    SerialDebug.println();
 }
 
 bool LoRa::ReadLoRa(uint8_t* MensagemRecebida, int Tamanho, uint8_t comando) {
@@ -53,24 +59,27 @@ bool LoRa::ReadLoRa(uint8_t* MensagemRecebida, int Tamanho, uint8_t comando) {
         delay(10);
     }
 
+	SerialDebug.print("Bytes Recebidos: ");
     for (int i = 0; i < Tamanho; i++) {
         int a = SerialLoRa.read();
         if (a == -1) {
             i--;
         } else {
             MensagemRecebida[i] = a;
+			SerialDebug.print(" 0x");
+			SerialDebug.print(a, HEX);
             delay(1);
         }
     }
+	SerialDebug.println();
 
-    delay(1000);
-    Serial.println();
-    Serial.print("Leitura: ");
+    SerialDebug.println();
+    SerialDebug.print("Leitura: ");
     for (int i = 0; i < Tamanho; i++) {
-        Serial.print(" 0x");
-        Serial.print(MensagemRecebida[i], HEX);
+        SerialDebug.print(" 0x");
+        SerialDebug.print(MensagemRecebida[i], HEX);
     }
-    Serial.println();
+    SerialDebug.println();
 
     SerialLoRa.flush();
     if (MensagemRecebida[2] == comando) {
@@ -352,109 +361,109 @@ void LoRa::LeituraRota() {
 }
 
 void LoRa::debugDadosLoRa() {
-    Serial.println();
-    Serial.println("========================================================");
-    Serial.println();
-    Serial.println("ID:              \t0x" + String(ID[MSB], HEX) + " " +
+    SerialDebug.println();
+    SerialDebug.println("========================================================");
+    SerialDebug.println();
+    SerialDebug.println("ID:              \t0x" + String(ID[MSB], HEX) + " " +
                    String(ID[LSB], HEX));
-    Serial.println("UID:             \t0x" + String(UID[0], HEX) + " " +
+    SerialDebug.println("UID:             \t0x" + String(UID[0], HEX) + " " +
                    String(UID[1], HEX) + " " + String(UID[2], HEX) + " " +
                    String(UID[3], HEX));
-    Serial.println();  // Parametros
-    Serial.println("Potencia:        \t0x" + String(POT, HEX));
-    Serial.println("BandWidth:       \t0x" + String(BW, HEX));
-    Serial.println("SpreadingFactor: \t0x" + String(SF, HEX));
-    Serial.println("Coding Rate:     \t0x" + String(CR, HEX));
-    Serial.println();  // Configuracao
-    Serial.println("Revisao FW:      \t0x" + String(FW, HEX));
-    Serial.println("Canal:           \t0x" + String(Canal, HEX));
-    Serial.println("BAUD:            \t0x" + String(BAUD, HEX));
-    Serial.println("Versao FW:       \t0x" + String(VersaoFW, HEX));
-    Serial.println("Banco de Memoria:\t0x" + String(BancoMemoria, HEX));
-    Serial.println("TestePeriodico:  \t0x" + String(TestePeriodico[0], HEX) +
+    SerialDebug.println();  // Parametros
+    SerialDebug.println("Potencia:        \t0x" + String(POT, HEX));
+    SerialDebug.println("BandWidth:       \t0x" + String(BW, HEX));
+    SerialDebug.println("SpreadingFactor: \t0x" + String(SF, HEX));
+    SerialDebug.println("Coding Rate:     \t0x" + String(CR, HEX));
+    SerialDebug.println();  // Configuracao
+    SerialDebug.println("Revisao FW:      \t0x" + String(FW, HEX));
+    SerialDebug.println("Canal:           \t0x" + String(Canal, HEX));
+    SerialDebug.println("BAUD:            \t0x" + String(BAUD, HEX));
+    SerialDebug.println("Versao FW:       \t0x" + String(VersaoFW, HEX));
+    SerialDebug.println("Banco de Memoria:\t0x" + String(BancoMemoria, HEX));
+    SerialDebug.println("TestePeriodico:  \t0x" + String(TestePeriodico[0], HEX) +
                    " " + String(TestePeriodico[1], HEX));
-    Serial.println("MascaraConfig:   \t0x" + String(MascaraConfig, HEX));
-    Serial.println();  // Modo de Operacao
-    Serial.println("Classe:          \t0x" + String(Classe, HEX));
-    Serial.println("Janela:          \t0x" + String(Janela, HEX));
-    Serial.println("Transp:          \t0x" + String(Transp, HEX));
-    Serial.println();
-    Serial.println();  // Diagnostico
-    Serial.println();
-    Serial.println("TempMin:\t\t0x" + String(TempMin, HEX));
-    Serial.println("TempAtual:\t\t0x" + String(TempAtual, HEX));
-    Serial.println("TempMax:\t\t0x" + String(TempMax, HEX));
-    Serial.println();
-    Serial.println("VMin:\t\t\t0x" + String(VMin, HEX));
-    Serial.println("VAtual:\t\t\t0x" + String(VAtual, HEX));
-    Serial.println("VMax:\t\t\t0x" + String(VMax, HEX));
-    Serial.println();  // Ruido
-    Serial.println("RuidoMin:\t\t0x" + String(RuidoMin, HEX));
-    Serial.println("RuidoMed:\t\t0x" + String(RuidoMed, HEX));
-    Serial.println("RuidoMax:\t\t0x" + String(RuidoMax, HEX));
-    Serial.println();  // RSSI
-    Serial.println("RSSIIda:\t\t0x" + String(RSSIIda, HEX));
-    Serial.println("RSSIVolta:\t\t0x" + String(RSSIVolta, HEX));
-    Serial.println("SNRIda:\t\t\t0x" + String(SNRIda, HEX));
-    Serial.println("SNRVolta:\t\t0x" + String(SNRVolta, HEX));
-    Serial.println("IDGateway:\t\t0x" + String(IDGateway[0], HEX) + " " +
+    SerialDebug.println("MascaraConfig:   \t0x" + String(MascaraConfig, HEX));
+    SerialDebug.println();  // Modo de Operacao
+    SerialDebug.println("Classe:          \t0x" + String(Classe, HEX));
+    SerialDebug.println("Janela:          \t0x" + String(Janela, HEX));
+    SerialDebug.println("Transp:          \t0x" + String(Transp, HEX));
+    SerialDebug.println();
+    SerialDebug.println();  // Diagnostico
+    SerialDebug.println();
+    SerialDebug.println("TempMin:\t\t0x" + String(TempMin, HEX));
+    SerialDebug.println("TempAtual:\t\t0x" + String(TempAtual, HEX));
+    SerialDebug.println("TempMax:\t\t0x" + String(TempMax, HEX));
+    SerialDebug.println();
+    SerialDebug.println("VMin:\t\t\t0x" + String(VMin, HEX));
+    SerialDebug.println("VAtual:\t\t\t0x" + String(VAtual, HEX));
+    SerialDebug.println("VMax:\t\t\t0x" + String(VMax, HEX));
+    SerialDebug.println();  // Ruido
+    SerialDebug.println("RuidoMin:\t\t0x" + String(RuidoMin, HEX));
+    SerialDebug.println("RuidoMed:\t\t0x" + String(RuidoMed, HEX));
+    SerialDebug.println("RuidoMax:\t\t0x" + String(RuidoMax, HEX));
+    SerialDebug.println();  // RSSI
+    SerialDebug.println("RSSIIda:\t\t0x" + String(RSSIIda, HEX));
+    SerialDebug.println("RSSIVolta:\t\t0x" + String(RSSIVolta, HEX));
+    SerialDebug.println("SNRIda:\t\t\t0x" + String(SNRIda, HEX));
+    SerialDebug.println("SNRVolta:\t\t0x" + String(SNRVolta, HEX));
+    SerialDebug.println("IDGateway:\t\t0x" + String(IDGateway[0], HEX) + " " +
                    String(IDGateway[1], HEX));
-    Serial.println();
-    Serial.println("========================================================");
-    Serial.println();
-    Serial.write(0x00);
-    Serial.write(0x00);
-    Serial.write(0x00);
-    Serial.write(0x00);
-    Serial.write(0x00);
-    Serial.write(0x00);
-    Serial.write(0x00);
-    Serial.write(0x00);
-    Serial.write(0x00);
-    Serial.write(0x00);
+    SerialDebug.println();
+    SerialDebug.println("========================================================");
+    SerialDebug.println();
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
 }
 
 LoRa::LoRa() {
-	SerialLoRa.begin(9600);
+	SerialLoRa.begin(9600, SERIAL_8N1, LORA_RX, LORA_TX);
 }
 
 void LoRa::debugConfiguracoesLoRa() {
-    Serial.println();
-    Serial.println("========================================================");
-    Serial.println();
-    Serial.println("ID:              \t0x" + String(ID[MSB], HEX) + " " +
+    SerialDebug.println();
+    SerialDebug.println("========================================================");
+    SerialDebug.println();
+    SerialDebug.println("ID:              \t0x" + String(ID[MSB], HEX) + " " +
                    String(ID[LSB], HEX));
-    Serial.println("UID:             \t0x" + String(UID[0], HEX) + " " +
+    SerialDebug.println("UID:             \t0x" + String(UID[0], HEX) + " " +
                    String(UID[1], HEX) + " " + String(UID[2], HEX) + " " +
                    String(UID[3], HEX));
-    Serial.println();  // Parametros
-    Serial.println("Potencia:        \t0x" + String(POT, HEX));
-    Serial.println("BandWidth:       \t0x" + String(BW, HEX));
-    Serial.println("SpreadingFactor: \t0x" + String(SF, HEX));
-    Serial.println("Coding Rate:     \t0x" + String(CR, HEX));
-    Serial.println();  // Configuracao
-    Serial.println("Revisao FW:      \t0x" + String(FW, HEX));
-    Serial.println("Canal:           \t0x" + String(Canal, HEX));
-    Serial.println("BAUD:            \t0x" + String(BAUD, HEX));
-    Serial.println("Versao FW:       \t0x" + String(VersaoFW, HEX));
-    Serial.println("Banco de Memoria:\t0x" + String(BancoMemoria, HEX));
-    Serial.println("TestePeriodico:  \t0x" + String(TestePeriodico[0], HEX) +
+    SerialDebug.println();  // Parametros
+    SerialDebug.println("Potencia:        \t0x" + String(POT, HEX));
+    SerialDebug.println("BandWidth:       \t0x" + String(BW, HEX));
+    SerialDebug.println("SpreadingFactor: \t0x" + String(SF, HEX));
+    SerialDebug.println("Coding Rate:     \t0x" + String(CR, HEX));
+    SerialDebug.println();  // Configuracao
+    SerialDebug.println("Revisao FW:      \t0x" + String(FW, HEX));
+    SerialDebug.println("Canal:           \t0x" + String(Canal, HEX));
+    SerialDebug.println("BAUD:            \t0x" + String(BAUD, HEX));
+    SerialDebug.println("Versao FW:       \t0x" + String(VersaoFW, HEX));
+    SerialDebug.println("Banco de Memoria:\t0x" + String(BancoMemoria, HEX));
+    SerialDebug.println("TestePeriodico:  \t0x" + String(TestePeriodico[0], HEX) +
                    " " + String(TestePeriodico[1], HEX));
-    Serial.println("MascaraConfig:   \t0x" + String(MascaraConfig, HEX));
-    Serial.println();  // Modo de Operacao
-    Serial.println("Classe:          \t0x" + String(Classe, HEX));
-    Serial.println("Janela:          \t0x" + String(Janela, HEX));
-    Serial.println("Transp:          \t0x" + String(Transp, HEX));
-    Serial.write(0x00);
-    Serial.write(0x00);
-    Serial.write(0x00);
-    Serial.write(0x00);
-    Serial.write(0x00);
-    Serial.write(0x00);
-    Serial.write(0x00);
-    Serial.write(0x00);
-    Serial.write(0x00);
-    Serial.write(0x00);
+    SerialDebug.println("MascaraConfig:   \t0x" + String(MascaraConfig, HEX));
+    SerialDebug.println();  // Modo de Operacao
+    SerialDebug.println("Classe:          \t0x" + String(Classe, HEX));
+    SerialDebug.println("Janela:          \t0x" + String(Janela, HEX));
+    SerialDebug.println("Transp:          \t0x" + String(Transp, HEX));
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
+    SerialDebug.write(0x00);
 }
 
 void LoRa::LeituraConfiguracoesLoRa() {

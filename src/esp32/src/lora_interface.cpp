@@ -28,29 +28,17 @@ uint16_t ComputeCRC(const uint8_t* data_in, uint16_t length) {
 
 bool LoraInterface::write(const uint8_t* data, uint16_t length) {
 	const auto crc = ComputeCRC(data, length);
-	const uint8_t crc_bytes[2] = {crc & 0xFF, (crc >> 8) & 0xFF};
+	// Usar for p enviar dados
 	const auto ret_data = serial.write(data, length) == length;
-	const auto ret_crc = serial.write(crc_bytes, sizeof(crc_bytes)) == sizeof(crc_bytes);
+	const auto ret_crc = serial.write((uint8_t *)&crc, sizeof(crc)) == sizeof(crc);
 
-	serial.printf("CRC = %04x\n", crc);
-	serial.print("Dados: ");
+	printf("CRC = %04x\n", crc);
+	printf("Dados escritos: ");
 	for (auto i = 0; i < length; i++) {
-		serial.printf("%02x ", data[i]);
+		printf(" 0x%02x", data[i]);
 	}
-	serial.println();
-	serial.flush();
-	delay(1000);
-
-/*
-	serial.flush();
-	delay(1000);
-	serial.print("Dados escritos: ");
-	for(auto i = 0; i < length; i++) {
-		serial.printf("%02x ", data[i]);
-	}
-	serial.printf("%04x\n", crc);
-*/
-	return ret_data && ret_crc;
+	printf("\n");
+	return ret_crc && ret_data;
 }
 
 bool LoraInterface::write(const Packet &packet) {
@@ -58,39 +46,11 @@ bool LoraInterface::write(const Packet &packet) {
 }
 
 bool LoraInterface::read(uint8_t* data, uint16_t length, uint16_t timeout_ms) {
-	/*
-    uint16_t i = 0;
-    uint16_t waitNextByte = 500;
-    while (((timeout_ms > 0) || (i > 0)) && (waitNextByte > 0)) {
-        if (Serial2.available() > 0) {
-            data[i++] = Serial2.read();
-            waitNextByte = 500;
-        }
-        if (i > 0) {
-            waitNextByte--;
-        }
-        timeout_ms--;
-        delay(1);
-    }
-	serial.flush();
-	delay(1000);
-	if((timeout_ms == 0) && (i == 0)){
-		serial.printf("Timeout de leitura\n");
-		return false;
-	}
-
-	serial.printf("Dados lidos %04x ", ComputeCRC(data, i));
-	for(int i = 0; i < length; i++) {
-		serial.printf("%02x ", data[i]);
-	}
-	serial.println();
-
-	return true;
-	*/
     while (!serial.available()) {
         delay(10);
     }
 
+	printf("Dados    lidos: ");
     for (int i = 0; i < length; i++) {
 		// read retorna -1 quando não há dados disponíveis
 		// uartRead retorna 0 em caso de erro
@@ -99,9 +59,14 @@ bool LoraInterface::read(uint8_t* data, uint16_t length, uint16_t timeout_ms) {
             i--;
         } else {
             data[i] = a;
+			printf(" 0x%02x", a);
             delay(1);
         }
     }
+	printf("\n");
+	delay(1000);
+	serial.flush();
+	serial.flush();
 	serial.flush();
 
 /*
@@ -124,17 +89,13 @@ bool LoraInterface::read(Packet &packet, uint16_t timeout_ms) {
 
 LoraInterface::LoraInterface(HardwareSerial &serial) : serial(serial) {
 	SET_TIMER_DEFAULT;
+	//serial.begin(BAUD_RATE, SERIAL_8N1, UART2.first, UART2.second);
 	serial.begin(BAUD_RATE);
 	memset(&conf, 0, sizeof(conf));
 	const auto ret = readConfig();
 	if (!ret) {
-		serial.printf("Erro ao ler configuração");
+		printf("Erro ao ler configuração");
 	}
-}
-
-LoraInterface::LoraInterface(const Config &config, HardwareSerial &serial)
-	: serial(serial), conf(config) {
-	serial.begin(BAUD_RATE);
 }
 
 void LoraInterface::setId(const uint16_t id) {
@@ -307,24 +268,32 @@ bool LoraInterface::writeTransparentInterface() {
 }
 
 bool LoraInterface::writeConfig() {
-	return writeRadioConfig() &&
-	writeParameterConfig() &&
-	writeOperationMode() &&
-	writeTransparentInterface();
+	return writeRadioConfig();
+	//writeParameterConfig() &&
+	//writeOperationMode() &&
+	//writeTransparentInterface();
 }
 
 bool LoraInterface::commandInterface(uint8_t *command, uint16_t length_command,
     uint8_t *response, uint16_t length_response) {
-	if (!write(command, length_command)) {
-		return false;
+
+	bool received_correct_response = false;
+	while (!received_correct_response) {
+		if (!write(command, length_command)) {
+			continue;
+		}
+		if (!read(response, length_response, READ_TIMEOUT)) {
+			continue;
+		}
+		received_correct_response = response[2] == command[2];
 	}
-	return read(response, length_response, READ_TIMEOUT);
+	return true;
 }
 
 bool LoraInterface::readRadioConfig() {
 	const uint8_t size_data = 31;
 	uint8_t data[size_data] = {0};
-	uint8_t data_in[] = {0, 0, CMD_LOCAL_READ, 0, 0, 0};
+	uint8_t data_in[] = {conf.id.bytes[0], conf.id.bytes[1], CMD_LOCAL_READ, 0, 0, 0};
 
 	if (!commandInterface(data_in, sizeof(data_in), data, size_data)) {
 		return false;
@@ -400,18 +369,17 @@ bool LoraInterface::readConfig() {
 
 void LoraInterface::printConfig() const {
 	//serial.printf("%c%c%c", 0, 0, 10); // id e comando invalido
-	serial.printf("id: %02X\n", conf.id.value);
-	serial.printf("uid: %04X\n", uid.value);
-	serial.printf("potency: %d\n", conf.potency);
-	serial.printf("bandwidth: %d\n", conf.bandwidth);
-	serial.printf("spreading_factor: %d\n", conf.spreading_factor);
-	serial.printf("baud_rate: %d\n", conf.baud_rate);
-	serial.printf("coding_rate: %d\n", conf.coding_rate);
-	serial.printf("mask_config: %d\n", conf.mask_config);
-	serial.printf("periodic_test: %d\n", conf.periodic_test.value);
-	serial.printf("operation_mode: %d\n", conf.lora_class);
-	serial.printf("window: %d\n", conf.window);
-	serial.flush();
+	printf("id: %02X\n", conf.id.value);
+	printf("uid: %04X\n", uid.value);
+	printf("potency: %d\n", conf.potency);
+	printf("bandwidth: %d\n", conf.bandwidth);
+	printf("spreading_factor: %d\n", conf.spreading_factor);
+	printf("baud_rate: %d\n", conf.baud_rate);
+	printf("coding_rate: %d\n", conf.coding_rate);
+	printf("mask_config: %d\n", conf.mask_config);
+	printf("periodic_test: %d\n", conf.periodic_test.value);
+	printf("operation_mode: %d\n", conf.lora_class);
+	printf("window: %d\n", conf.window);
 }
 
 LoraInterface::~LoraInterface() {

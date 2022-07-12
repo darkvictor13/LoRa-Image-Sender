@@ -39,7 +39,7 @@ def criaLora() -> serial.Serial:
 		parity=serial.PARITY_NONE,
 		stopbits=serial.STOPBITS_ONE,
 		bytesize=serial.EIGHTBITS,
-		timeout=None
+		timeout=1
 	)
 
 def lerLora(serial : serial.Serial):
@@ -51,12 +51,14 @@ def lerLora(serial : serial.Serial):
 	mensagem.append(crc_lsb)
 	mensagem.append(crc_msb)
 	bytes_writhed = int(serial.write(mensagem))
+	serial.flush()
 	print('Enviou', bytes_writhed, 'bytes')
 	if bytes_writhed != len(mensagem):
 		print('Erro ao escrever na serial')
 		return None, None
 	resposta = serial.read(31)
-	print('Chegou a mensagem:', resposta)
+	serial.flush()
+	print('Chegou a mensagem:', resposta, 'com', len(resposta), 'bytes')
 	id  = bytearray([resposta[0], resposta[1]])
 	uid = bytearray([resposta[5], resposta[6], resposta[7], resposta[8]])
 	return id, uid

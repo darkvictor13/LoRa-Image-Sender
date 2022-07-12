@@ -1,13 +1,15 @@
 # implementar controle de erros com CRC 16 bits
-def crc16(data: bytearray) -> int:
-	crc = 0
-	for byte in data:
-		crc = crc ^ byte
-		for _ in range(8):
-			if (crc & 0x0001) == 0x0001:
-				crc = (crc >> 1) ^ 0xA001
-			else:
-				crc = (crc >> 1)
+def crc16(data):
+    tamanho = len(data)
+    bitbang = 0
+    crc_calc = 0xC181
+    for x in range(0, tamanho):
+        crc_calc ^= data[x] & 0x00FF
+        for j in range(0, 8):
+            bitbang=crc_calc
+            crc_calc>>=1
+            if(int(bitbang) & 1):
+                crc_calc ^= 0xA001
 
-	print('CRC de', data, '= ', hex(crc))
-	return crc
+    print('CRC de', data, '= ', hex(crc_calc))
+    return crc_calc
