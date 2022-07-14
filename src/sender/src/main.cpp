@@ -7,6 +7,8 @@
 #include "image_part.hpp"
 #include "message_types.hpp"
 
+#define ACK_MAX_TIME 10000
+
 uint8_t image_id = 1;
 
 std::vector<ImagePart> image_parts;
@@ -91,6 +93,7 @@ void setup() {
 			Serial.println("enviado");
 		} else {
 			Serial.println("não enviado");
+			continue;
 		}
 		
 		if (
@@ -99,25 +102,23 @@ void setup() {
 			&received_command,
 			buffer,
 			&buffer_size,
-			6000
+			ACK_MAX_TIME 
 		) == MESH_ERROR) {
 			Serial.println("Não recebeu nada");
 			continue;
 		}
+		/*
 		Serial.printf("Recebido: %d bytes\n", buffer_size);
 		Serial.printf("Comando: %02x\n", received_command);
 		Serial.print("Dados: ");
 		printHexBuffer(buffer, buffer_size);
-		if (buffer[1] == image_parts[i].fields.part) {
+		*/
+		if (buffer[0] == ACK && buffer[1] == image_parts[i].fields.part) {
 			Serial.println("Frame recebido corretamente");
 			i++;
 		}else {
 			Serial.println("Mensagem recebida nao possui ACK");
 		}
-		//delay(1000);
-	}
-	while (true) {
-		;
 	}
 }
 

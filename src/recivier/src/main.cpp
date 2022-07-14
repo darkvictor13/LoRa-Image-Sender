@@ -1,25 +1,27 @@
 #include <Arduino.h>
 #include <LoRaMESH.h>
+#include "message_types.hpp"
 
 #define WINDOW_SIZE 10
+#define TIME_TO_RECEIVE_MESSAGE 1000
 
-uint8_t bufferPayload[MAX_PAYLOAD_SIZE] = {0};
-uint8_t receivedBuffer[MAX_PAYLOAD_SIZE] = {0};
-uint8_t payloadSize = 0, receivedSize = 0, rssi_ida = 0, rssi_volta = 0;
-uint16_t localId, receivedId, remoteId, gateway, localNet;
+uint8_t buffer[MAX_PAYLOAD_SIZE];
+uint8_t buffer_size = 0;
+uint16_t local_id, received_id, remoteId, gateway, localNet;
 uint32_t localUniqueId;
 uint8_t command, receivedCommand;
 
 uint8_t response[2];
 
 void setup() {
+	memset(buffer, 0, sizeof(buffer));
 	memset(response, 0, sizeof(response));
 	Serial.begin(115200);
     SerialCommandsInit(9600);  //(rx_pin,tx_pin)
-    if (LocalRead(&localId, &localNet, &localUniqueId) != MESH_OK) {
+    if (LocalRead(&local_id, &localNet, &localUniqueId) != MESH_OK) {
         Serial.printf("Couldn't read local ID\n\n");
     } else {
-        Serial.printf("Local ID: %hu\nLocal NET: %hu\n", localId, localNet);
+        Serial.printf("Local ID: %hu\nLocal NET: %hu\n", local_id, localNet);
     }
     delay(2000);
 }
@@ -27,23 +29,26 @@ void setup() {
 void loop() {
     if (
 	ReceivePacketCommand(
-		&receivedId,
+		&received_id,
 		&receivedCommand,
-		receivedBuffer,
-		&receivedSize,
-		6000
+		buffer,
+		&buffer_size,
+		TIME_TO_RECEIVE_MESSAGE
 	) == MESH_ERROR) {
-		return; // caso nao leia nenhum dado
+		Serial.println("Não recebeu nenhum pacote");
+		return;
     }
+
     Serial.printf("Dados recebido: ");
-    for (int i = 0; i < receivedSize; i++) {
-        Serial.printf("%02X ", receivedBuffer[i]);
+    for (int i = 0; i < buffer_size; i++) {
+        Serial.printf("%02X ", buffer[i]);
     }
     Serial.printf("\n");
+
+	response[0] = ACK;
+	response[1] = buffer[2];
 	Serial.print("Resposta: ");
-	response[0] = 0;
-	response[1] = receivedBuffer[2];
-	PrepareFrameCommand(receivedId, CMD_SENDTRANSP, response, sizeof(response));
+	PrepareFrameCommand(received_id, CMD_SENDTRANSP, response, sizeof(response));
 	if (SendPacket() == MESH_OK) {
 		Serial.println("enviado");
 	} else {
