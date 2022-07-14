@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <LoRaMESH.h>
 
+constexpr uint8_t APPLICATION_MAX_PAYLOAD_SIZE = MAX_PAYLOAD_SIZE - 1;
+
 /*
 	Dados colocados no payload Quando deseja mandar uma imagem
 	type | id | part | total_parts | image (n bytes)
@@ -16,7 +18,7 @@
 	image: bytes que compõem a imagem
 */
 struct _payload {
-	uint8_t byte_array[MAX_PAYLOAD_SIZE - 1];
+	uint8_t byte_array[APPLICATION_MAX_PAYLOAD_SIZE];
 	uint8_t size;
 };
 
@@ -25,6 +27,7 @@ struct _fields {
 	uint8_t id;
 	uint8_t part;
 	uint8_t total_parts;
+	uint8_t message_size;
 };
 
 union ImagePart {
@@ -32,5 +35,5 @@ union ImagePart {
 	_payload payload;
 };
 
-constexpr uint8_t max_image_size = MAX_PAYLOAD_SIZE - sizeof(_fields) - 1;
-constexpr uint8_t index_begin_image = sizeof(_fields);
+constexpr uint8_t MAX_IMAGE_SIZE = APPLICATION_MAX_PAYLOAD_SIZE - sizeof(_fields);
+constexpr uint8_t INDEX_BEGIN_IMAGE = sizeof(_fields);

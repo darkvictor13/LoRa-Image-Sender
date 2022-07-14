@@ -8,41 +8,62 @@
 #include "message_types.hpp"
 
 uint8_t image_id = 1;
-const uint8_t tam_buffer = MAX_PAYLOAD_SIZE - 1;
-uint8_t buffer[tam_buffer];
 
 std::vector<ImagePart> image_parts;
 
-void separate(const camera_fb_t *frame) {
-	const uint8_t total_parts = (uint8_t)ceil(frame->len / (float)max_image_size);
-	for (size_t i = 0; i < frame->len; i+=max_image_size) {
-		ImagePart part;
-		part.fields.type = IMAGE_JPEG;
-		part.fields.id = image_id;
-		part.fields.part = i / max_image_size;
-		part.fields.total_parts = total_parts;
-		part.payload.size = std::min (
-			static_cast<size_t>(max_image_size),
-			frame->len - i
-		);
-		memcpy(part.payload.byte_array, frame->buf + i, part.payload.size);
-		image_parts.push_back(part);
-	}
+void printHexBuffer(const uint8_t* buffer, uint8_t size) {
+    for (uint8_t i = 0; i < size; i++) {
+        Serial.printf(" %02X", buffer[i]);
+    }
+    Serial.println();
 }
 
-uint16_t localId, receivedId, remoteId, gateway, localNet;
+void separate(const camera_fb_t *frame) {
+	const uint8_t total_parts = (uint8_t)ceil(frame->len / (float)MAX_IMAGE_SIZE);
+	for (size_t i = 0; i < frame->len; i+=MAX_IMAGE_SIZE) {
+		ImagePart part;
+		//memset(part.payload.byte_array, 0, sizeof(part.payload.byte_array));
+		part.fields.type = IMAGE_JPEG;
+		part.fields.id = image_id;
+		part.fields.part = (i / MAX_IMAGE_SIZE) & 0xFF;
+		part.fields.total_parts = total_parts;
+		Serial.printf("Gerando frame %d de %d\n", part.fields.part, total_parts);
+		part.payload.size = std::min (
+			static_cast<size_t>(MAX_IMAGE_SIZE),
+			frame->len - i
+		);
+		memcpy(part.payload.byte_array + INDEX_BEGIN_IMAGE, frame->buf + i, part.payload.size);
+		image_parts.push_back(part);
+	}
+	Serial.println("\n");
+}
+
+bool sendImagePart(ImagePart &part, const uint8_t id) {
+	PrepareFrameCommand(
+		id,
+		CMD_SENDTRANSP,
+		part.payload.byte_array,
+		part.payload.size
+	);
+	return SendPacket() == MESH_OK;
+}
 
 void setup() {
 	Camera camera;
 	uint32_t localUniqueId;
+	uint16_t local_id, receivedId, localNet;
+	uint8_t received_command;
+
+	uint8_t buffer[APPLICATION_MAX_PAYLOAD_SIZE];
+	uint8_t buffer_size = 0;
 
 	Serial.begin(115200);
 	Serial.println("Iniciando\n");
 	SerialCommandsInit(9600);  //(rx_pin,tx_pin)
-    if (LocalRead(&localId, &localNet, &localUniqueId) != MESH_OK) {
+    if (LocalRead(&local_id, &localNet, &localUniqueId) != MESH_OK) {
         Serial.printf("Couldn't read local ID\n\n");
     } else {
-        Serial.printf("Local ID: %hu\nLocal NET: %hu\n", localId, localNet);
+        Serial.printf("Local ID: %hu\nLocal NET: %hu\n", local_id, localNet);
     }
     delay(2000);
 	camera.init();
@@ -54,43 +75,52 @@ void setup() {
 		printf("Picture is not NULL\n");
 	}
 
-	// a partir da picture cria um vetor partes de imagem
-	//for (size_t i = 0; i < picture->len; i += tam_buffer) {
-
-	//}
-	ImagePart image;
-	image.fields.type = IMAGE_JPEG;
-	image.fields.id = image_id;
-	image.fields.part = 1;
-	image.fields.total_parts = 10;
-	//memset(&image.payload.byte_array[index_begin_image], 0xCC, max_image_size);
-	memcpy(image.payload.byte_array + index_begin_image, picture->buf, max_image_size);
-	image.payload.size = MAX_PAYLOAD_SIZE - 1;
-
-	Serial.print("Dados da Imagem: ");
-	for (uint8_t i = 0; i < image.payload.size; i++) {
-		Serial.printf(" %02x", image.payload.byte_array[i]);
+	separate(picture);
+	Serial.printf("Total de partes: %d\n", image_parts.size());
+	Serial.printf("Tamanho da imagem: %d\n", picture->len);
+	Serial.println("Iniciando o envio");
+	size_t i = 0;
+	const size_t img_parts_size = image_parts.size();
+	while (i < img_parts_size) {
+		Serial.printf(
+			"Enviando frame %03d de %03d bytes ",
+			(int)image_parts[i].fields.part,
+			(int)image_parts[i].payload.size
+		);
+		if (sendImagePart(image_parts[i], local_id)) {
+			Serial.println("enviado");
+		} else {
+			Serial.println("não enviado");
+		}
+		
+		if (
+		ReceivePacketCommand(
+			&receivedId,
+			&received_command,
+			buffer,
+			&buffer_size,
+			6000
+		) == MESH_ERROR) {
+			Serial.println("Não recebeu nada");
+			continue;
+		}
+		Serial.printf("Recebido: %d bytes\n", buffer_size);
+		Serial.printf("Comando: %02x\n", received_command);
+		Serial.print("Dados: ");
+		printHexBuffer(buffer, buffer_size);
+		if (buffer[1] == image_parts[i].fields.part) {
+			Serial.println("Frame recebido corretamente");
+			i++;
+		}else {
+			Serial.println("Mensagem recebida nao possui ACK");
+		}
+		//delay(1000);
 	}
-	Serial.println();
-	Serial.println("Enviando imagem");
-	PrepareFrameCommand(localId, CMD_SENDTRANSP, image.payload.byte_array, image.payload.size);
-	if (SendPacket() == MESH_OK) {
-		Serial.println("Imagem enviada");
-	} else {
-		Serial.println("Imagem não enviada");
+	while (true) {
+		;
 	}
-	delay(10000);
 }
 
 void loop() {
-	for (int i = 0; i < tam_buffer; i++) {
-		buffer[i] = i;
-	}
-	PrepareFrameCommand(localId, CMD_SENDTRANSP, buffer, tam_buffer);
-	if (SendPacket() == MESH_OK) {
-		Serial.println("Packet sent\n");
-	} else {
-		Serial.println("Packet not sent\n");
-	}
-	delay(5000);
+	;
 }
