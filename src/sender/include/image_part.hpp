@@ -1,3 +1,7 @@
+/*
+	Testes:
+	Para enviar um frame e receber um ACK demora 2 segundos
+*/
 #pragma once
 
 #include <Arduino.h>
