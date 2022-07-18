@@ -1,3 +1,7 @@
+/*
+	Testes:
+	Para enviar um frame e receber um ACK demora 2 segundos
+*/
 #pragma once
 
 #include <Arduino.h>
@@ -7,14 +11,14 @@ constexpr uint8_t APPLICATION_MAX_PAYLOAD_SIZE = MAX_PAYLOAD_SIZE - 1;
 
 /*
 	Dados colocados no payload Quando deseja mandar uma imagem
-	type | id | part | total_parts | image (n bytes)
+	type | id | part | last_part | image (n bytes)
 	O pacote final deve ficar no formato:
-	id_chip_lsb | id_chip_msb | type | id | part | total_parts | image (n bytes) | crc_lsb | crc_msb
+	id_chip_lsb | id_chip_msb | type | id | part | last_part | image (n bytes) | crc_lsb | crc_msb
 
 	type: tipo do pacote (IMAGE_JPEG, ACK, NACK)
 	id: o numero da mensagem (identificador)
-	part: numero da parte da imagem (de 0 a total_parts)
-	total_parts: numero total de partes da imagem
+	part: numero da parte da imagem (de 0 a last_part)
+	last_part: numero total de partes da imagem
 	image: bytes que compõem a imagem
 */
 struct _payload {
@@ -26,7 +30,7 @@ struct _fields {
 	uint8_t type;
 	uint8_t id;
 	uint8_t part;
-	uint8_t total_parts;
+	uint8_t last_part;
 	uint8_t message_size;
 };
 

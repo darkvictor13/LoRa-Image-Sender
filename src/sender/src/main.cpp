@@ -112,7 +112,7 @@ void setup() {
 			Serial.println("não enviado");
 			continue;
 		}
-		//Serial1.flush();
+		Serial1.flush();
 		//delay(1000);
 		if (
 		ReceivePacketCommand(
@@ -120,7 +120,7 @@ void setup() {
 			&received_command,
 			buffer,
 			&buffer_size,
-			TIME_TO_RECEIVE_MESSAGE * 2 
+			(TIME_TO_RECEIVE_MESSAGE * 3)
 		) == MESH_ERROR) {
 			Serial.println("Não recebeu nada");
 			continue;
