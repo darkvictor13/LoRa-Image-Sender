@@ -5,9 +5,9 @@
 #include <WebServer.h>
 
 #include "message_types.hpp"
+#include "lora_definitions.hpp"
 
 #define WINDOW_SIZE 1
-#define TIME_TO_RECEIVE_MESSAGE 1000
 
 #define img_path "/img.jpg"
 
@@ -15,7 +15,7 @@ uint16_t img_size = 0;
 uint8_t img[0xFFFF];
 
 uint8_t buffer[MAX_PAYLOAD_SIZE];
-uint8_t buffer_size = 0;
+uint8_t buffer_size;
 uint16_t local_id, received_id, remoteId, gateway, localNet;
 uint32_t localUniqueId;
 uint8_t command, receivedCommand;
@@ -23,7 +23,6 @@ uint8_t command, receivedCommand;
 uint8_t response[2 * WINDOW_SIZE];
 
 WebServer server;
-
 
 void setupAp() {
 	// SSID & Password
@@ -38,7 +37,7 @@ void setupAp() {
 	WiFi.softAP(ssid, password);
 	WiFi.softAPConfig(local_ip, gateway, subnet);
 
-	Serial.printf("Connect to My access point: %s\n", ssid);
+	Serial.printf("Conecte-se a %s para ver a imagem\n", ssid);
 }
 
 void serveImg() {
@@ -81,7 +80,6 @@ void setup() {
 	TaskHandle_t handle_server = NULL;
 	xTaskCreate(taskHandleServer, "server", 20000, NULL, 1, &handle_server);
 
-/*
 	Serial.println("Iniciando LoRaMESH");
     SerialCommandsInit(9600);  //(rx_pin,tx_pin)
     if (LocalRead(&local_id, &localNet, &localUniqueId) != MESH_OK) {
@@ -90,7 +88,6 @@ void setup() {
         Serial.printf("Local ID: %hu\nLocal NET: %hu\n", local_id, localNet);
     }
     delay(2000);
-	*/
 }
 
 void loop() {
@@ -110,6 +107,8 @@ void loop() {
 			buffer_index = 0;
 		}
 	}
+	*/
+	buffer_size = 0;
     if (
 	ReceivePacketCommand(
 		&received_id,
@@ -151,11 +150,14 @@ void loop() {
 		Serial.println();
 
 		auto file = SPIFFS.open(img_path, "w");
+		if (!file) {
+			Serial.println("Falha ao abrir o arquivo");
+			return;
+		}
 		if (file.write(img, img_size) != img_size) {
 			Serial.println("Falha ao escrever imagem");
 			return;
 		}
 		file.close();
 	}
-	*/
 }
