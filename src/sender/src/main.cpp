@@ -3,6 +3,7 @@
 #include <SPIFFS.h>
 #include <WebServer.h>
 #include <WiFi.h>
+#include <SPIFFS.h>
 #include <array>
 #include <queue>
 
@@ -20,7 +21,7 @@
 	Taxa de dados segundo a pagina 9 da documentacao = 21875 bits
 */
 
-#define ACK_MAX_TIME 3000
+#define img_path "/img.jpg"
 
 uint8_t image_id = 1;
 
@@ -33,9 +34,10 @@ void printHexBuffer(const uint8_t* buffer, uint8_t size) {
     Serial.println();
 }
 
-void separate(const camera_fb_t *frame) {
-	const uint8_t last_part = ((uint8_t)ceil(frame->len / (float)MAX_IMAGE_SIZE)) - 1;
-	for (size_t i = 0; i < frame->len; i+=MAX_IMAGE_SIZE) {
+//void separate(const camera_fb_t *frame) {
+void separate(const uint8_t *buffer, size_t size) {
+	const uint8_t last_part = ((uint8_t)ceil(size / (float)MAX_IMAGE_SIZE)) - 1;
+	for (size_t i = 0; i < size; i+=MAX_IMAGE_SIZE) {
 		ImagePart part;
 		//memset(part.payload.byte_array, 0, sizeof(part.payload.byte_array));
 		part.fields.type = IMAGE_JPEG;
@@ -45,9 +47,9 @@ void separate(const camera_fb_t *frame) {
 		Serial.printf("Gerando frame %d de %d\n", part.fields.part, last_part);
 		part.payload.size = std::min (
 			static_cast<size_t>(MAX_IMAGE_SIZE),
-			frame->len - i
+			size - i
 		);
-		memcpy(part.payload.byte_array + INDEX_BEGIN_IMAGE, frame->buf + i, part.payload.size);
+		memcpy(part.payload.byte_array + INDEX_BEGIN_IMAGE, buffer + i, part.payload.size);
 		image_parts.push_back(part);
 	}
 	Serial.println("\n");
@@ -83,6 +85,27 @@ void setup() {
     }
     delay(2000);
 
+	uint8_t img_to_send[1024];
+	for (uint16_t i = 0; i < sizeof(img_to_send); i++) {
+		img_to_send[i] = i % 256;
+	}
+	separate(img_to_send, sizeof(img_to_send));
+/*
+	Serial.println("Iniciando SPIFFS");
+	if (!SPIFFS.begin()) {
+		Serial.println("Falha ao iniciar o SPIFFS");
+		return ;
+	}
+
+	auto file = SPIFFS.open(img_path);
+	if (!file) {
+		Serial.println("Falha ao abrir o arquivo");
+		return;
+	}
+	const String img_to_send = file.readString();
+	separate((const uint8_t *)img_to_send.c_str(), img_to_send.length());
+*/
+/*
 	Serial.println("Iniciando Camera");
 	camera.init();
 	auto picture = camera.takePicture();
@@ -93,10 +116,11 @@ void setup() {
 		printf("Picture is not NULL\n");
 	}
 
-	separate(picture);
+	separate(picture->buf, picture->len);
 	Serial.printf("Total de partes: %d\n", image_parts.size());
 	Serial.printf("Tamanho da imagem: %d\n", picture->len);
 	Serial.println("Iniciando o envio");
+*/
 
 	size_t i = 0;
 	const size_t img_parts_size = image_parts.size();

@@ -31,7 +31,6 @@ struct _fields {
 	uint8_t id;
 	uint8_t part;
 	uint8_t last_part;
-	uint8_t message_size;
 };
 
 union ImagePart {

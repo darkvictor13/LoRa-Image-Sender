@@ -6,6 +6,7 @@
 
 #include "message_types.hpp"
 #include "lora_definitions.hpp"
+#include "image_part.hpp"
 
 #define WINDOW_SIZE 1
 
@@ -122,8 +123,10 @@ void loop() {
     }
 
 	Serial.printf("Mensagem %d recebida de %hu\n", buffer[2], received_id);
-	memcpy(img + img_size, buffer, buffer_size);
-	img_size += buffer_size;
+	// salva os dados de buffer na imagem (img)
+	const auto size_to_write = buffer_size - INDEX_BEGIN_IMAGE;
+	memcpy(img + img_size, buffer + INDEX_BEGIN_IMAGE, size_to_write);
+	img_size += size_to_write;
 
     Serial.printf("Dados recebido: ");
     for (int i = 0; i < buffer_size; i++) {
