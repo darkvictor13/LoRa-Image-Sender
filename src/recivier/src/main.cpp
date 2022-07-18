@@ -122,8 +122,10 @@ void loop() {
 		return;
     }
 
-	Serial.printf("Mensagem %d recebida de %hu\n", buffer[2], received_id);
-	// salva os dados de buffer na imagem (img)
+	Serial.printf(
+		"Mensagem %d recebida de %hu, com %d bytes inicial %02x e final %02x\n",
+		buffer[2], received_id, buffer_size, buffer[INDEX_BEGIN_IMAGE], buffer[buffer_size - 1]
+	);
 	const auto size_to_write = buffer_size - INDEX_BEGIN_IMAGE;
 	memcpy(img + img_size, buffer + INDEX_BEGIN_IMAGE, size_to_write);
 	img_size += size_to_write;
