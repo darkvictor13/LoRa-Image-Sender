@@ -164,5 +164,6 @@ void loop() {
 			return;
 		}
 		file.close();
+		img_size = 0;
 	}
 }

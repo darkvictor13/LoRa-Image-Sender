@@ -44,12 +44,22 @@ void separate(const uint8_t *buffer, size_t size) {
 		part.fields.id = image_id;
 		part.fields.part = (i / MAX_IMAGE_SIZE) & 0xFF;
 		part.fields.last_part = last_part;
+		if (MAX_IMAGE_SIZE < size - i) {
+			part.payload.size = APPLICATION_MAX_PAYLOAD_SIZE;
+			memcpy(part.payload.byte_array + INDEX_BEGIN_IMAGE, buffer + i, MAX_IMAGE_SIZE);
+		} else {
+			part.payload.size = size - i + INDEX_BEGIN_IMAGE;
+			memcpy(part.payload.byte_array + INDEX_BEGIN_IMAGE, buffer + i, size - i);
+		}
+		/*
 		Serial.printf("Gerando frame %d de %d\n", part.fields.part, last_part);
 		part.payload.size = std::min (
-			static_cast<size_t>(MAX_IMAGE_SIZE),
-			size - i
+			static_cast<size_t>(APPLICATION_MAX_PAYLOAD_SIZE),
+			(size - i) + INDEX_BEGIN_IMAGE
 		);
+		Serial.printf("Comecando a copiar o byte %02x e terminando com %02x\n", *(buffer + i), *(buffer + i + part.payload.size));
 		memcpy(part.payload.byte_array + INDEX_BEGIN_IMAGE, buffer + i, part.payload.size);
+		*/
 		image_parts.push_back(part);
 	}
 	Serial.println("\n");
@@ -85,11 +95,13 @@ void setup() {
     }
     delay(2000);
 
+/*
 	uint8_t img_to_send[1024];
 	for (uint16_t i = 0; i < sizeof(img_to_send); i++) {
 		img_to_send[i] = i % 256;
 	}
 	separate(img_to_send, sizeof(img_to_send));
+*/
 /*
 	Serial.println("Iniciando SPIFFS");
 	if (!SPIFFS.begin()) {
@@ -105,7 +117,6 @@ void setup() {
 	const String img_to_send = file.readString();
 	separate((const uint8_t *)img_to_send.c_str(), img_to_send.length());
 */
-/*
 	Serial.println("Iniciando Camera");
 	camera.init();
 	auto picture = camera.takePicture();
@@ -120,7 +131,6 @@ void setup() {
 	Serial.printf("Total de partes: %d\n", image_parts.size());
 	Serial.printf("Tamanho da imagem: %d\n", picture->len);
 	Serial.println("Iniciando o envio");
-*/
 
 	size_t i = 0;
 	const size_t img_parts_size = image_parts.size();
