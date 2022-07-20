@@ -25,6 +25,13 @@ uint8_t response[2 * WINDOW_SIZE];
 
 WebServer server;
 
+void printHexBuffer(const uint8_t* buffer, uint8_t size) {
+    for (uint8_t i = 0; i < size; i++) {
+        Serial.printf(" %02X", buffer[i]);
+    }
+    Serial.println();
+}
+
 void setupAp() {
 	// SSID & Password
 	const char* ssid = "redeDoEsp";
@@ -53,6 +60,7 @@ void serveImg() {
 	file.close();
 	server.send(200, "image/jpeg", img);
 }
+
 void taskHandleServer(void * pvParameters) {
 	while (true) {
 		server.handleClient();
@@ -147,12 +155,9 @@ void loop() {
 	}
 
 	if (buffer[2] == buffer[3]) {
-		Serial.println("Imagem completa");
+		Serial.println("Imagem completa:");
+		printHexBuffer(img, img_size);
 		Serial.printf("Image size: %d, bytes:\n", img_size);
-		for (int i = 0; i < img_size; i++) {
-			Serial.printf("%02X ", img[i]);
-		}
-		Serial.println();
 
 		auto file = SPIFFS.open(img_path, "w");
 		if (!file) {

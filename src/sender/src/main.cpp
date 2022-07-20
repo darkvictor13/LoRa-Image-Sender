@@ -34,7 +34,6 @@ void printHexBuffer(const uint8_t* buffer, uint8_t size) {
     Serial.println();
 }
 
-//void separate(const camera_fb_t *frame) {
 void separate(const uint8_t *buffer, size_t size) {
 	const uint8_t last_part = ((uint8_t)ceil(size / (float)MAX_IMAGE_SIZE)) - 1;
 	for (size_t i = 0; i < size; i+=MAX_IMAGE_SIZE) {
@@ -51,15 +50,6 @@ void separate(const uint8_t *buffer, size_t size) {
 			part.payload.size = size - i + INDEX_BEGIN_IMAGE;
 			memcpy(part.payload.byte_array + INDEX_BEGIN_IMAGE, buffer + i, size - i);
 		}
-		/*
-		Serial.printf("Gerando frame %d de %d\n", part.fields.part, last_part);
-		part.payload.size = std::min (
-			static_cast<size_t>(APPLICATION_MAX_PAYLOAD_SIZE),
-			(size - i) + INDEX_BEGIN_IMAGE
-		);
-		Serial.printf("Comecando a copiar o byte %02x e terminando com %02x\n", *(buffer + i), *(buffer + i + part.payload.size));
-		memcpy(part.payload.byte_array + INDEX_BEGIN_IMAGE, buffer + i, part.payload.size);
-		*/
 		image_parts.push_back(part);
 	}
 	Serial.println("\n");
@@ -126,6 +116,9 @@ void setup() {
 	} else {
 		printf("Picture is not NULL\n");
 	}
+	Serial.println("Imagem:");
+	printHexBuffer(picture->buf, picture->len);
+	Serial.println();
 
 	separate(picture->buf, picture->len);
 	Serial.printf("Total de partes: %d\n", image_parts.size());
