@@ -1,5 +1,7 @@
 #pragma once
 
+#include <LoRaMESH.h>
+
 // Definicoes da taxa de transmissão
 #define BITS_PER_SECOND 21875
 static constexpr uint8_t BITS_PER_MS   = BITS_PER_SECOND / 1000;

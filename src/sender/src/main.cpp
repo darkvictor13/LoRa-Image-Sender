@@ -1,11 +1,6 @@
 #include <Arduino.h>
-#include <LoRaMESH.h>
-#include <SPIFFS.h>
 #include <WebServer.h>
-#include <WiFi.h>
-#include <SPIFFS.h>
-#include <array>
-#include <queue>
+#include <vector>
 
 #include "camera.hpp"
 #include "image_part.hpp"
@@ -85,28 +80,6 @@ void setup() {
     }
     delay(2000);
 
-/*
-	uint8_t img_to_send[1024];
-	for (uint16_t i = 0; i < sizeof(img_to_send); i++) {
-		img_to_send[i] = i % 256;
-	}
-	separate(img_to_send, sizeof(img_to_send));
-*/
-/*
-	Serial.println("Iniciando SPIFFS");
-	if (!SPIFFS.begin()) {
-		Serial.println("Falha ao iniciar o SPIFFS");
-		return ;
-	}
-
-	auto file = SPIFFS.open(img_path);
-	if (!file) {
-		Serial.println("Falha ao abrir o arquivo");
-		return;
-	}
-	const String img_to_send = file.readString();
-	separate((const uint8_t *)img_to_send.c_str(), img_to_send.length());
-*/
 	Serial.println("Iniciando Camera");
 	camera.init();
 	auto picture = camera.takePicture();
