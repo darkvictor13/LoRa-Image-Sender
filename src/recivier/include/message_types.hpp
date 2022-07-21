@@ -3,5 +3,6 @@
 enum MessageTypes {
 	ACK,
 	NACK,
-	IMAGE_JPEG
+	IMAGE_JPEG,
+	TAKE_PICTURE
 };

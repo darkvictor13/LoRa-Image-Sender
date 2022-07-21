@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <base64.h>
+#include <uri/UriBraces.h>
 
 #include "message_types.hpp"
 #include "lora_definitions.hpp"
@@ -82,6 +83,22 @@ void serveImg() {
 	server.send(200, "image/jpeg", img);
 }
 
+void requestImg() {
+	const auto id = static_cast<uint16_t>(server.pathArg(0).toInt());
+	if (!id) {
+		server.send(200, "text/plain", "Id invalido");
+	}
+	uint8_t req = MessageTypes::TAKE_PICTURE;
+	PrepareFrameCommand(id, CMD_SENDTRANSP, &req, sizeof(req));
+	Serial.printf("Enviando pedido de imagem para %d: ", (int)id);
+	if (SendPacket() == MESH_OK) {
+		Serial.println("enviado");
+	} else {
+		Serial.println("não enviado");
+	}
+	server.send(200, "text/plain", String("Requisitando imagem para ") + id);
+}
+
 void taskHandleServer(void * pvParameters) {
 	while (true) {
 		server.handleClient();
@@ -118,6 +135,7 @@ void setup() {
 	}
 	setupAp();
     server.on("/lora_img", serveImg);
+    server.on(UriBraces("/req_img/{}"), requestImg);
 	server.begin();
 	TaskHandle_t handle_server = NULL;
 	xTaskCreate(taskHandleServer, "server", 20000, NULL, 1, &handle_server);

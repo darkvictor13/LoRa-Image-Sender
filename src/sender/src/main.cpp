@@ -21,7 +21,13 @@
 #define img_path "/img.jpg"
 
 uint8_t image_id = 1;
+
+// Variáveis do LoRa
 uint16_t local_id, local_net;
+uint8_t buffer[APPLICATION_MAX_PAYLOAD_SIZE];
+uint8_t buffer_size = 0;
+uint16_t received_id;
+uint8_t received_command;
 
 Camera camera;
 
@@ -63,10 +69,6 @@ bool sendImagePart(ImagePart &part, const uint8_t id) {
 }
 
 void sendStopWait(std::vector<ImagePart> &image_parts) {
-	uint8_t buffer[APPLICATION_MAX_PAYLOAD_SIZE];
-	uint8_t buffer_size = 0;
-	uint16_t received_id;
-	uint8_t received_command;
 
 	size_t i = 0;
 	const size_t img_parts_size = image_parts.size();
@@ -80,8 +82,7 @@ void sendStopWait(std::vector<ImagePart> &image_parts) {
 		}
 		Serial1.flush();
 		Serial.println("Esperando ACK");
-		if (
-		ReceivePacketCommand(
+		if (ReceivePacketCommand(
 			&received_id,
 			&received_command,
 			buffer,
@@ -98,6 +99,20 @@ void sendStopWait(std::vector<ImagePart> &image_parts) {
 		}else {
 			Serial.println("Mensagem recebida nao possui ACK");
 		}
+	}
+}
+
+void waitToTakePicture() {
+	Serial.println("Esperando pela solicitação de tirar foto");
+	while (ReceivePacketCommand(
+		&received_id,
+		&received_command,
+		buffer,
+		&buffer_size,
+		0xFFFFFFFF
+	) == MESH_ERROR) {
+		Serial.println("Não recebeu solicitação");
+		continue;
 	}
 }
 
@@ -126,6 +141,7 @@ void setup() {
 
 void loop() {
 	std::vector<ImagePart> image_parts;
+	waitToTakePicture();
 	Serial.printf("Tirando foto numero %d:\n", image_id);
 	auto picture = camera.takePicture();
 	printHexBuffer(picture->buf, picture->len);
@@ -137,5 +153,4 @@ void loop() {
 	sendStopWait(image_parts);
 	Serial.println("Terminando o envio");
 	image_id++;
-	delay(10000);
 }
