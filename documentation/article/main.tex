@@ -23,6 +23,24 @@ sumario=tradicional
 \usepackage{caption}
 \usepackage{booktabs}
 \usepackage{footnote}
+\usepackage{listings}
+
+\lstset{frame=tb,
+  language=C++,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=4
+}
 
 % ---
 % Pacotes adicionais, usados apenas no âmbito do Modelo Canônico do abnteX2
@@ -197,7 +215,7 @@ UNIOESTE
     \vspace{\onelineskip}
     \noindent
 
-    \textbf{Keywords}: Precision agriculture, Internet of things, Sensors.
+    \textbf{Keywords}: LoRa, Redes LPWAN, Envio de imagens
   \end{otherlanguage*}  
 \end{resumoumacoluna}
 
@@ -213,6 +231,41 @@ UNIOESTE
 % ----------------------------------------------------------
 \section{Introdução}
 Introdução
+
+\section{Materiais e métodos}\label{Materiais e métodos}
+
+\subsection{Protocolos utilizados}\label{Protocolos utilizados}
+\subsubsection{Stop and Wait}\label{Stop and Wait}
+
+\subsubsection{Detecção de erros: CRC}\label{CRC}
+
+Falar dos algoritmos de Detecção de erro (CRC) e correção de erros (Hamming)
+
+\begin{lstlisting}[title=Algoritmo CRC 16 bits]
+static const uint16_t POLY = 0xA001;
+static const uint16_t INIT = 0xC181;
+
+uint16_t computeCRC(uint8_t* data_in, uint16_t length) {
+    uint16_t i;
+    uint8_t bitbang, j;
+    uint16_t crc_calc = INIT;
+
+    for(i = 0; i < length; i++) {
+        crc_calc ^= (((uint16_t)data_in[i]) & 0x00FF);
+        for(j = 0; j < 8; j++) {
+            bitbang = crc_calc;
+            crc_calc >>= 1;
+
+            if(bitbang & 1) {
+                crc_calc ^= POLY;
+            }
+        }
+    }
+    return (crc_calc & 0xFFFF);
+}
+\end{lstlisting}
+
+\section{Estrutura dos pacotes}\label{Estrutura dos pacotes}
 
 % ----------------------------------------------------------
 % ELEMENTOS PÓS-TEXTUAIS

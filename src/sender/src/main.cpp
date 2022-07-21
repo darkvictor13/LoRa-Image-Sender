@@ -13,7 +13,7 @@
 	Spreading Factor: 7 
 	Coding rate: 1, 4/5
 
-	Taxa de dados segundo a pagina 9 da documentacao = 21875 bits
+	Taxa de dados segundo a pagina 9 da documentação = 21875 bits
 */
 
 #define img_path "/img.jpg"
@@ -33,8 +33,7 @@ void separate(const uint8_t *buffer, size_t size) {
 	const uint8_t last_part = ((uint8_t)ceil(size / (float)MAX_IMAGE_SIZE)) - 1;
 	for (size_t i = 0; i < size; i+=MAX_IMAGE_SIZE) {
 		ImagePart part;
-		//memset(part.payload.byte_array, 0, sizeof(part.payload.byte_array));
-		part.fields.type = IMAGE_JPEG;
+		part.fields.type = MessageTypes::IMAGE_JPEG;
 		part.fields.id = image_id;
 		part.fields.part = (i / MAX_IMAGE_SIZE) & 0xFF;
 		part.fields.last_part = last_part;
@@ -47,7 +46,6 @@ void separate(const uint8_t *buffer, size_t size) {
 		}
 		image_parts.push_back(part);
 	}
-	Serial.println("\n");
 }
 
 bool sendImagePart(ImagePart &part, const uint8_t id) {
@@ -74,14 +72,22 @@ void setup() {
 	Serial.println("Iniciando LoRaMESH");
 	SerialCommandsInit(9600);  //(rx_pin,tx_pin)
     if (LocalRead(&local_id, &localNet, &localUniqueId) != MESH_OK) {
-        Serial.printf("Couldn't read local ID\n\n");
+        Serial.println("Falha ao ler Parâmetros do LoRa");
     } else {
-        Serial.printf("Local ID: %hu\nLocal NET: %hu\n", local_id, localNet);
+        Serial.println("Sucesso ao ler Parâmetros do LoRa");
+        Serial.printf(
+			"\tID: %hu\n\tNET: %hu\n\tUID: %u\n",
+			local_id,
+			localNet,
+			localUniqueId
+		);
     }
     delay(2000);
 
 	Serial.println("Iniciando Camera");
 	camera.init();
+	sensor_t *sensor = esp_camera_sensor_get();
+	sensor->set_whitebal(sensor, 0);
 	auto picture = camera.takePicture();
 	if (picture == NULL) {
 		printf("Picture is NULL\n");
@@ -113,7 +119,6 @@ void setup() {
 			continue;
 		}
 		Serial1.flush();
-		//delay(1000);
 		if (
 		ReceivePacketCommand(
 			&receivedId,
