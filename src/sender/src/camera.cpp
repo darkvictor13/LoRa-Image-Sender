@@ -29,7 +29,7 @@ void Camera::setDefaultConfig() {
 	config.xclk_freq_hz = 20000000;
 	config.pixel_format = PIXFORMAT_JPEG;
 
-	config.frame_size = FRAMESIZE_HVGA; //FRAMESIZE_96X96
+	config.frame_size = FRAMESIZE_HVGA;
 	config.jpeg_quality = 50;  //0-63 lower number means higher quality
 	config.fb_count = 1;
 }
@@ -39,15 +39,27 @@ void Camera::init() {
 	is_initialized = (err == ESP_OK);
 	ESP_ERROR_CHECK(err);
 	sensor_t *sensor = esp_camera_sensor_get();
-	sensor->set_whitebal(sensor, 0);
-	sensor->set_special_effect(sensor, 2);
+	//sensor->set_whitebal(sensor, 0);
+	sensor->set_special_effect(sensor, 2); //grayscale
 }
 
 camera_fb_t* Camera::takePicture() {
 	if (!is_initialized) {
-		return NULL;
+		Serial.println("Camera nao foi inicializada");
+		delay(1000);
+		ESP.restart();
 	}
-    return esp_camera_fb_get();
+    auto p = esp_camera_fb_get();
+	if (p == NULL) {
+		Serial.printf("Picture is NULL\n");
+		delay(1000);
+		ESP.restart();
+	}
+	return p;
+}
+
+void Camera::freePicture(camera_fb_t* picture) {
+	esp_camera_fb_return(picture);
 }
 
 Camera::~Camera() {

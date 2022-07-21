@@ -12,6 +12,7 @@ public:
 
 	void init();
 	camera_fb_t* takePicture();
+	void freePicture(camera_fb_t* picture);
 
 	~Camera();
 };

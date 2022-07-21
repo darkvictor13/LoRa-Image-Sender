@@ -3,6 +3,7 @@
 #include <SPIFFS.h>
 #include <WiFi.h>
 #include <WebServer.h>
+#include <base64.h>
 
 #include "message_types.hpp"
 #include "lora_definitions.hpp"
@@ -25,11 +26,11 @@ uint8_t response[2 * WINDOW_SIZE];
 
 WebServer server;
 
-#define TCC_LEVI 1
+#define TCC_LEVI 0
 
 #if TCC_LEVI
 #include <HTTPClient.h>
-static const char server_hostname[] = "192.168.1.110:3001/upload";
+static const char server_hostname[] = "http://192.168.1.110:3001/upload";
 #endif
 
 void printHexBuffer(const uint8_t* buffer, uint8_t size) {
@@ -59,7 +60,12 @@ void setupAp() {
 	WiFi.softAPConfig(local_ip, gateway, subnet);
 #if TCC_LEVI
 	WiFi.begin(ssid_sta, password_sta);
-	WiFi.waitForConnectResult();
+	if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+		Serial.println("Falha ao conectar ao Wifi");
+		ESP.restart();
+	}else {
+		Serial.println("Conectado ao Wifi");
+	}
 #endif
 }
 
@@ -80,6 +86,18 @@ void taskHandleServer(void * pvParameters) {
 	while (true) {
 		server.handleClient();
 		delay(2);
+	}
+}
+
+void sendACK() {
+	response[0] = ACK;
+	response[1] = buffer[2];
+	Serial.print("Resposta: ");
+	PrepareFrameCommand(received_id, CMD_SENDTRANSP, response, 2);
+	if (SendPacket() == MESH_OK) {
+		Serial.println("enviado");
+	} else {
+		Serial.println("não enviado");
 	}
 }
 
@@ -115,23 +133,6 @@ void setup() {
 }
 
 void loop() {
-	/*
-	const auto qnt_disponivel = Serial1.available();
-	if (qnt_disponivel > 0) {
-		Serial1.read(buffer + buffer_index, qnt_disponivel);
-		Serial.print("Chegaram os bytes:");
-		for (int i = buffer_index; i < buffer_index + qnt_disponivel; i++) {
-			Serial.printf(" %02X", buffer[i]);
-		}
-		Serial.println();
-		buffer_index += qnt_disponivel;
-		Serial.printf("Bytes lidos ate agr: %d\n", buffer_index);
-		if (buffer_index >= MAX_BUFFER_SIZE) {
-			Serial.println("Buffer cheio");
-			buffer_index = 0;
-		}
-	}
-	*/
 	buffer_size = 0;
     if (
 	ReceivePacketCommand(
@@ -145,10 +146,8 @@ void loop() {
 		return;
     }
 
-	Serial.printf(
-		"Mensagem %d recebida de %hu, com %d bytes inicial %02x e final %02x\n",
-		buffer[2], received_id, buffer_size, buffer[INDEX_BEGIN_IMAGE], buffer[buffer_size - 1]
-	);
+	Serial.printf("Mensagem %d recebida de %hu\n",buffer[2], received_id);
+
 	const auto size_to_write = buffer_size - INDEX_BEGIN_IMAGE;
 	memcpy(img + img_size, buffer + INDEX_BEGIN_IMAGE, size_to_write);
 	img_size += size_to_write;
@@ -157,17 +156,9 @@ void loop() {
     for (int i = 0; i < buffer_size; i++) {
         Serial.printf("%02X ", buffer[i]);
     }
-    Serial.printf("\n");
+    Serial.println();
 
-	response[0] = ACK;
-	response[1] = buffer[2];
-	Serial.print("Resposta: ");
-	PrepareFrameCommand(received_id, CMD_SENDTRANSP, response, 2);
-	if (SendPacket() == MESH_OK) {
-		Serial.println("enviado");
-	} else {
-		Serial.println("não enviado");
-	}
+	sendACK();
 
 	if (buffer[2] == buffer[3]) {
 		Serial.println("Imagem completa:");
@@ -185,9 +176,17 @@ void loop() {
 		}
 		#if TCC_LEVI
 		HTTPClient http;
-		http.begin(server_hostname);
-		http.addHeader("Content-Type", "image/jpeg");
-		http.POST(img, img_size);
+		if (http.begin(server_hostname)) {
+			Serial.println("Iniciando requisição");
+		}else {
+			Serial.println("Falha ao iniciar requisição");
+		}
+		String json = "{\"image\": \"";
+		http.addHeader("Content-Type", "application/json");
+		json += base64::encode(img, img_size);
+		json += "\"}";
+		Serial.println("Json: " + json);
+		Serial.println(http.POST(json));
 		#endif
 
 		file.close();
