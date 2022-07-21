@@ -38,6 +38,9 @@ void Camera::init() {
 	const auto err = esp_camera_init(&config);
 	is_initialized = (err == ESP_OK);
 	ESP_ERROR_CHECK(err);
+	sensor_t *sensor = esp_camera_sensor_get();
+	sensor->set_whitebal(sensor, 0);
+	sensor->set_special_effect(sensor, 2);
 }
 
 camera_fb_t* Camera::takePicture() {

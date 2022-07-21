@@ -86,8 +86,6 @@ void setup() {
 
 	Serial.println("Iniciando Camera");
 	camera.init();
-	sensor_t *sensor = esp_camera_sensor_get();
-	sensor->set_whitebal(sensor, 0);
 	auto picture = camera.takePicture();
 	if (picture == NULL) {
 		printf("Picture is NULL\n");

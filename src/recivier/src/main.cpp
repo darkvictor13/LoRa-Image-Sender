@@ -25,6 +25,13 @@ uint8_t response[2 * WINDOW_SIZE];
 
 WebServer server;
 
+#define TCC_LEVI 1
+
+#if TCC_LEVI
+#include <HTTPClient.h>
+static const char server_hostname[] = "192.168.1.110:3001/upload";
+#endif
+
 void printHexBuffer(const uint8_t* buffer, uint8_t size) {
     for (uint8_t i = 0; i < size; i++) {
         Serial.printf(" %02X", buffer[i]);
@@ -33,19 +40,27 @@ void printHexBuffer(const uint8_t* buffer, uint8_t size) {
 }
 
 void setupAp() {
-	// SSID & Password
-	const char* ssid = "redeDoEsp";
-	const char* password = "senhaSegura.";
+	const char* ssid_ap = "redeDoEsp";
+	const char* password_ap = "senhaSegura.";
+
+#if TCC_LEVI
+	const char* ssid_sta = "LabIoT";
+	const char* password_sta = "labiot2020.";
+#endif
 
 	// IP Address details
 	IPAddress local_ip(192, 168, 1, 1);
 	IPAddress gateway(192, 168, 1, 1);
 	IPAddress subnet(255, 255, 255, 0);
 
-	WiFi.softAP(ssid, password);
+	// faz o esp crar um AP e conecta ao wifi
+	WiFi.mode(WIFI_AP_STA);
+	WiFi.softAP(ssid_ap, password_ap);
 	WiFi.softAPConfig(local_ip, gateway, subnet);
-
-	Serial.printf("Conecte-se a %s para ver a imagem\n", ssid);
+#if TCC_LEVI
+	WiFi.begin(ssid_sta, password_sta);
+	WiFi.waitForConnectResult();
+#endif
 }
 
 void serveImg() {
@@ -168,6 +183,13 @@ void loop() {
 			Serial.println("Falha ao escrever imagem");
 			return;
 		}
+		#if TCC_LEVI
+		HTTPClient http;
+		http.begin(server_hostname);
+		http.addHeader("Content-Type", "image/jpeg");
+		http.POST(img, img_size);
+		#endif
+
 		file.close();
 		img_size = 0;
 	}
