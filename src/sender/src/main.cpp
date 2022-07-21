@@ -120,6 +120,7 @@ void setup() {
 	uint32_t local_unique_id;
 	Serial.begin(115200);
 
+/*
 	Serial.println("Iniciando LoRaMESH");
 	SerialCommandsInit(9600);  //(rx_pin,tx_pin)
     if (LocalRead(&local_id, &local_net, &local_unique_id) != MESH_OK) {
@@ -134,6 +135,7 @@ void setup() {
 		);
     }
     delay(2000);
+	*/
 
 	Serial.println("Iniciando Camera");
 	camera.init();

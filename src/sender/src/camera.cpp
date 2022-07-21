@@ -29,8 +29,8 @@ void Camera::setDefaultConfig() {
 	config.xclk_freq_hz = 20000000;
 	config.pixel_format = PIXFORMAT_JPEG;
 
-	config.frame_size = FRAMESIZE_HVGA;
-	config.jpeg_quality = 50;  //0-63 lower number means higher quality
+	config.frame_size = FRAMESIZE_QVGA;
+	config.jpeg_quality = 20;  //0-63 lower number means higher quality
 	config.fb_count = 1;
 }
 

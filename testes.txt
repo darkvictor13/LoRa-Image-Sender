@@ -1,0 +1,17 @@
+Testando Resoluções utilizando compressão em 0 mantendo a câmera no mesmo lugar GrayScale
+640x480: Bytes   = 73260
+480x320: Bytes   = 39139
+400x296: Bytes   = 35916
+320x240: Bytes   = 23510
+240x176: Bytes   = 14242
+176x144: Bytes   = 9147
+
+Testando com a Resolução 480x320 mudando a compactação do jpeg
+0: Bytes = 39139
+10: Bytes = 8456
+20: Bytes = 6371
+30: Bytes = 5613
+40: Bytes = 5161
+50: Bytes = 4842
+60: Bytes = 4665
+63: Bytes = 4616
