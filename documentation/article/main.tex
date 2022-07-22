@@ -350,6 +350,9 @@ void reciver() {
 \subsection{Dispositivos}\label{Dispositivos}
 
 \subsubsection{LoRaMESH EndDivice}\label{LoRaMESH EndDivice}
+Para acessar a tecnologia de camada física LoRa utilizou o Módulo LoRaMESH homologado pela ANATEL\cite{lora_radioenge}, o qual possui diversos parâmetros variáveis tais como: \textit{Spreading Factor}, \textit{Coding rate}, Largura de banda de até 500 kHz.
+
+A configuração e utilização do dispositivo é feita através de duas interfaces de comunicação serial (UART), sendo a primeira utilizada para enviar e receber comandos de configuração e a segunda, chamada de interface transparente, envia e recebe diretamente da antena.
 
 \begin{figure}[!h]
   \caption{\label{fig:recivier}LoRaMESH EndDivice.}
@@ -445,9 +448,16 @@ union ImagePart {
 
 A fim de avaliar o funcionamento da implementação foram realizados diversos testes, dando especial atenção para a forma como a resolução e a taxa de compressão da imagem influenciam no tamanho da mensagem enviada no payload. Os principais resultados são mostrados a continuação.
 
-No primeiro grupo de testes realizado o foco foi avaliar como a resolução da imagem influencia no tamanho em bytes da mensagem enviada. Para isso, 
+No primeiro grupo de testes realizado o foco foi avaliar como a resolução da imagem influencia no tamanho em bytes da mensagem enviada. Para isso segui-se os seguintes critérios:
+\begin{itemize}
+    \setlength\itemsep{0.01cm}
+    \item 3 fotos por resolução escolhendo sempre a mediana.
+    \item Fotos tiradas do mesmo local na mesma posição;
+    \item Taxa de compressão do JPEG em 0;
+    \item Imagens em escala de cinsa;
+\end{itemize}
 
-\begin{table}[]
+\begin{table}[!h]
 \centering
 \begin{tabular}{@{}c|c@{}}
 \toprule
@@ -462,6 +472,28 @@ Resolução (pixels) & Tamanho (bytes) \\ \midrule
 \caption{Mudança de resolução afetando o tamanho da imagem}
 \label{tab:resolution}
 \end{table}
+
+No segundo grupo de testes o foco foi avaliar a taxa de compressão do JPEG, sendo assim seguiu-se os critérios supracitados porém mantendo a resolução fixa em 480x320 e alterando a a perda de qualidade da imagem.
+
+\begin{table}[!h]
+\centering
+\begin{tabular}{@{}c|c@{}}
+\toprule
+Qualidade (0-63) & Tamanho (bytes) \\ \midrule
+0                & 39139           \\
+10               & 8456            \\
+20               & 6371            \\
+30               & 5613            \\
+40               & 5161            \\
+50               & 4842            \\
+60               & 4665            \\
+63               & 4616            \\ \bottomrule
+\end{tabular}
+\caption{Mudança de qualidade da imagem afetando o tamanho}
+\label{tab:quality}
+\end{table}
+
+Avaliando também a taxa de transmissão percebeu-se que utilizando o algoritmo \textit{stop and wait} cada troca de quadros demora aproximadamente 2 segundos sendo assim pode-se calcular o tempo médio de envio de cada imagem dependendo unicamente da quantidade de quadros que a mesma ocupa.
 
 \cleardoublepage
 
