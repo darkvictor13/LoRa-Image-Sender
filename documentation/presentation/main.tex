@@ -81,27 +81,27 @@
 \section{Definições}
 \begin{frame}[allowframebreaks]
     \frametitle{Definições}
-    \begin{itemize}
-        \item\textbf{Internet das coisas}: \textit{Internet of things (IoT)}, uma rede que conecta
-		diversas ``coisas'' a internet, através de software, com o objetivo de trocar informações,
-		tais ``coisas'' são dispositivos físicos ou lógicos, podem ser sensores, microcontroladores ou até mesmo objetos que nunca
-		imaginamos tais como geladeiras, televisores, entre outros.
-        \framebreak
-        \item\textbf{LoRa}
-            \begin{itemize}
-                \item Atua na camada física;
-                \item Radio frequência;
-                \item Longas distâncias;
-                \item Baixo custo de transmissão;
-            \end{itemize}
-    \end{itemize}
+
+    \textbf{LPWAN}: \textit{Low Power Wide Area Network}, são redes que alcançam longas distâncias gastando pouca energia, normalmente utilizadas para enviar poucos dados. Dentre as tecnologias mais utilizadas estão SigFox e LoRa.
+
+    \framebreak
+
+    \includegraphics[width=.9\textwidth]{Comparativo-algumas-redes}
+
+    \framebreak
+
+    \textbf{Internet das coisas}: \textit{Internet of things (IoT)}, uma rede que conecta diversas ``coisas'' a internet, através de software, com o objetivo de trocar informações, tais ``coisas'' são dispositivos físicos ou lógicos, podem ser sensores, microcontroladores ou até mesmo objetos que nunca imaginamos tais como geladeiras, televisores, entre outros.
+
+    \framebreak
+
+    \textbf{LoRa}: \textit{Long Range}, é uma tecnologia que atua na camada física para o envio e recebimento de dados. Criado e mantido de forma proprietária pela empresa Semtech, o mesmo utiliza comunicação através de ondas na frequência de radio (\textit{Chirp Spread Spectrum}), para codificar o envio de dados focando em abarcar longas distância a um baixo custo energético.
 \end{frame}
 
 \section{Materiais e métodos}
 \subsection{Algoritmos utilizados}
 
 \begin{frame}[t,fragile]
-    \frametitle{Algoritmo CRC 16 bits}
+    \frametitle{Algoritmo detecção de erros: CRC 16 bits}
 \begin{lstlisting}[basicstyle=\small]
 uint16_t computeCRC(uint8_t* data_in, uint16_t length) {
     uint8_t bitbang, j;
@@ -119,41 +119,10 @@ uint16_t computeCRC(uint8_t* data_in, uint16_t length) {
 \end{lstlisting}
 \end{frame}
 
-\begin{frame}[t,fragile]
-    \frametitle{Algoritmo Stop and Wait - Sender}
-    \begin{lstlisting}[basicstyle=\small]
-void sender() {
-    InitCamera();
-    InitLoRa();
-    TakePicture(image);
-    SplitImage(image);
-    while(image.sendedParts < image.totalParts) {
-        SendImagePart(image.part());
-        ReceivePacketCommand(buffer);
-        if(buffer.messageType == ACK) {
-            image.sendedParts++;
-        }
-    }
-}
-    \end{lstlisting}
-\end{frame}
-
-\begin{frame}[t,fragile]
-    \frametitle{Algoritmo Stop and Wait - Receiver}
-    \begin{lstlisting}[basicstyle=\small]
-void reciver() {
-    InitImage(image);
-    InitLoRa();
-    while(true) {
-        ReceivePacketCommand(buffer);
-        SaveImageBytes(buffer);
-        PrepareFrameCommand(); // prepara ACK
-        SendPacket();
-        if(image.isComplete()) {
-            SaveImage(image);
-        }
-    }
-    \end{lstlisting}
+\begin{frame}
+    \frametitle{Controle de fluxo: Stop and Wait}
+    \centering
+    \includegraphics[width=.68\textwidth]{stop_and_wait}
 \end{frame}
 
 \subsection{Dispositivos utilizados}
@@ -181,11 +150,54 @@ void reciver() {
     \end{figure}
 \end{frame}
 
+\section{Proposta de arquitetura}
+\begin{frame}
+    \frametitle{Arquitetura}
+    \centering
+    \includegraphics[width=.9\textwidth]{arch}
+\end{frame}
+
+\begin{frame}
+    \frametitle{End points}
+    \begin{itemize}
+        \item\textbf{/lora\_img}
+            \begin{itemize}
+                \item Objetivo: Mostrar no dispositivo do usuário uma imagem JPEG com a última foto salva no dispositivo;
+                \item Método: GET;
+                \item Retorna: image/jpeg
+            \end{itemize}
+        \item\textbf{/req\_img/\{\}}
+            \begin{itemize}
+                \item Objetivo: Fazer com que o LoRa mestre envie uma mensagem pedindo ao dispositivo que tire uma foto e envie;
+                \item Parâmetros na url: o id do chip LoRa que vai enviar a imagem;
+                \item Método: GET;
+                \item Retorna: text/plain, indicando se foi possível ou não fazer a requisição.
+            \end{itemize}
+    \end{itemize}
+\end{frame}
+
 \section{Implementação}
 \begin{frame}
-    \frametitle{Estruturas de dados enviadas}
-    \begin{table}[t]
+    \frametitle{Fluxograma Sender}
+    \begin{figure}[!h]
         \centering
+        \includegraphics[width=.7\textwidth]{fluxogram_sender}
+    \end{figure}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Fluxograma Receiver}
+    \begin{figure}[!h]
+        \centering
+        \includegraphics[width=.7\textwidth]{fluxogram_recivier}
+    \end{figure}
+\end{frame}
+
+\begin{frame}[allowframebreaks]
+    \centering
+    \frametitle{Estruturas de dados enviadas}
+    Para enviar mensagens utilizando o chip LoRa, é preciso seguir o formato:
+    \begin{table}[t]
         \begin{tabular}{llll}
             \hline
             \multicolumn{1}{|c|}{ID}      & \multicolumn{1}{c|}{Command} & \multicolumn{1}{c|}{Payload}       & \multicolumn{1}{c|}{CRC}     \\ \hline
@@ -195,6 +207,8 @@ void reciver() {
                                           &  &  &
         \end{tabular}
     \end{table}
+
+    \framebreak
 
     \begin{table}[h]
         \centering
@@ -207,16 +221,14 @@ void reciver() {
             \multicolumn{1}{l}{} &  &  &  &
         \end{tabular}
     \end{table}
-    \begin{table}[t]
-        \begin{tabular}{|cc|}
-            \hline
-            \multicolumn{2}{|c|}{Payload}         \\ \hline
-            \multicolumn{1}{|c|}{ACK}    & ID     \\ \hline
-            \multicolumn{1}{|c|}{1 byte} & 1 byte \\ \hline
-        \end{tabular}
-        \caption{}
-        \label{tab:my-table}
-    \end{table}
+
+    \begin{itemize}
+        \item\textbf{Type}: campo que indica como os próximos bytes devem ser interpretados, podendo ser um ACK, ou uma parte de imagem.
+        \item\textbf{ID}: identificador único da imagem;
+        \item\textbf{Part}: qual a parte da imagem que está nessa mensagem;
+        \item\textbf{Total}: a quantidade total de partes da imagem;
+        \item\textbf{Message}: os bytes da imagem
+    \end{itemize}
 \end{frame}
 
 \begin{frame}[t,fragile]
@@ -239,21 +251,7 @@ union ImagePart {
     \end{lstlisting}
 \end{frame}
 
-\begin{frame}
-    \frametitle{Fluxograma Sender}
-    \begin{figure}[!h]
-        \centering
-        \includegraphics[width=.7\textwidth]{fluxogram_sender}
-    \end{figure}
-\end{frame}
 
-\begin{frame}
-    \frametitle{Fluxograma Receiver}
-    \begin{figure}[!h]
-        \centering
-        \includegraphics[width=.7\textwidth]{fluxogram_recivier}
-    \end{figure}
-\end{frame}
 
 \section{Resultados}
 \begin{frame}
@@ -311,10 +309,7 @@ union ImagePart {
     \end{table}
 \end{frame}
 
-\section{Discussão}
-
 \section{Conclusão}
-
 \begin{frame}
     \frametitle{Mão na massa!!}
     \begin{figure}
