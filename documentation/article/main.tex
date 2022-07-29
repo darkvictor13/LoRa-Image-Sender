@@ -311,7 +311,7 @@ Dados os requisitos do projeto a escolha dos algoritmos próprios para a tarefa 
 
 Visando a detecção de erros um dos algoritmos mais aconselháveis no caso de comunicação constante é o CRC devido a sua fácil implementação em hardware e baixo custo computacional para mensagens pequenas.
 
-O Algoritmo CRC pode variar em relação: Como iniciar seu valor, Qual o polinômio gerador, quantos bytes gera na saída.
+O Algoritmo CRC pode variar em relação: como iniciar seu valor, qual o polinômio gerador e quantos bytes gera na saída.
 
 No caso dessa implementação em C++ o CRC inicializa com $C181_{16}$, possui 16 bits (2 bytes) e o polinômio gerador $G(X) = A001_{16}$, essas são as configurações utilizadas na fase de implementação e também são recomendadas pelos criadores do chip\cite{lora_radioenge}
 
@@ -337,7 +337,7 @@ uint16_t computeCRC(uint8_t* data_in, uint16_t length) {
 \end{lstlisting}
 
 \subsubsection{Controle de fluxo: Stop and Wait}\label{Stop and Wait}
-Pelo fato dos dispositivos LoRa possuírem canais \textit{half duplex}, permitem envio nos 2 sentidos porém apenas um sentido por vez, inviabiliza algoritmos de janela deslizante.
+Pelo fato dos dispositivos LoRa possuírem canais \textit{half duplex} (permitem envio nos 2 sentidos porém apenas um sentido por vez) inviabiliza algoritmos de janela deslizante.
 
 Sendo assim do ponto de vista da camada de enlace de dados o algoritmo de controle de fluxo utilizado foi o \textbf{Stop and Wait}, o qual se carateriza pela sua simplicidade tanto durante a sua implementação como no seu funcionamento.
 
@@ -349,13 +349,11 @@ Durante a execução do protocolo o transmissor envia seu primeiro quadro e espe
     \caption{\label{fig:stop_and_wait}Fluxo de execução no tempo do algoritmo stop and wait}
 \end{figure}
 
-
-
-\cleardoublepage
 \section{Proposta de Arquitetura}\label{Proposta de Arquitetura}
 
 Após decidir os algoritmos e dispositivos mais adequados para implementação foi idealizada a arquitetura do projeto.
 
+\cleardoublepage
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=.9\textwidth]{arch}
@@ -370,7 +368,7 @@ Para teste foi criado 2 versões do código de dispositivos emissores, sendo ele
     \item Envia apenas quando solicitado, fica esperando até receber uma mensagem do \textit{master} dizendo para tirar uma nova foto e enviar.
 \end{enumerate}
 
-Para testar o recebimento e visualizar de maneira mais simples foi criado um acess point WiFi na qual um usuário final pode-se conectar, também é disponibilizado os seguintes endpoints no web server:
+Para testar o recebimento e visualizar de maneira mais simples foi criado um acess point WiFi na qual um usuário final pode se conectar, também é disponibilizado os seguintes endpoints no web server:
 
 \begin{itemize}
     \item\textbf{/lora\_img}
@@ -382,20 +380,18 @@ Para testar o recebimento e visualizar de maneira mais simples foi criado um ace
     \item\textbf{/req\_img/\{\}}
         \begin{itemize}
             \item Objetivo: Fazer com que o LoRa mestre envie uma mensagem pedindo ao dispositivo que tire uma foto e envie;
-            \item Parâmetros na url: o id do chip lora que vai enviar a imagem;
+            \item Parâmetros na url: o id do chip LoRa que vai enviar a imagem;
             \item Método: GET;
             \item Retorna: text/plain, indicando se foi possível ou não fazer a requisição.
         \end{itemize}
 \end{itemize}
-
-\cleardoublepage
 
 \section{Implementação}\label{Implementação}
 
 Visto a proposta de arquitetura supracitada, faz-se necessário implementar dois projetos sendo eles: um transmissor que envia uma imagem separada em diversos quadros utilizando o algoritmo stop and wait, e um receptor que recebe e serve essas imagens para outras aplicações.
 
 \subsection{Sender}\label{Sender}
-Do lado do \textit{Sender}, dispositivo que captura e envia imagens, em um primeiro momento são inicializadas a câmera e a antena LoRa. Em seguida é feita a captura de uma imagem que passa a ser dividida em partes atendendo ao tamanho máximo que pode ter o payload da mensagem que pode ser enviada pela antena LoRa. Assim, uma vez particionada a imagem inicia o seu processo de envio, no qual se envia o quadro e espera uma resposta. Caso não receba nada em determinado tempo ou receba algo que não seja o ack esperado a mensagem será reenviada. Sendo assim em alto nível o algoritmo de envio:
+Do lado do \textit{Sender}, dispositivo que captura e envia imagens, em um primeiro momento são inicializadas a câmera e a antena LoRa. Em seguida é feita a captura de uma imagem que passa a ser dividida em partes atendendo ao tamanho máximo que pode ter o payload da mensagem que pode ser enviada pela antena LoRa. Assim, uma vez dividida a imagem inicia o seu processo de envio, no qual se envia o quadro e espera uma resposta. Caso não receba nada em determinado tempo ou receba algo que não seja o ``ACK'' esperado a mensagem será reenviada. Sendo assim em alto nível o algoritmo de envio:
 
 \begin{lstlisting}[title=Algoritmo Stop and Wait - Sender]
 void sender() {
@@ -423,7 +419,7 @@ Dessa forma o fluxo de execução do dispositivo que envia a imagem:
 \end{figure}
 
 \subsection{Receiver}\label{Receiver}
-Por outro lado no receiver, em um primeiro momento também são inicializadas as estruturas de controle, bem como é alocado um espaço que serve de buffer para colocar as partes da imagem que está sendo recebida. Apos isso, o dispositivo fica esperando o recebimento de pacotes
+Por outro lado no \textit{receiver}, em um primeiro momento também são inicializadas as estruturas de controle, bem como é alocado um espaço que serve de buffer para colocar as partes da imagem que está sendo recebida. Após isso, o dispositivo fica esperando o recebimento de pacotes.
 
 \begin{lstlisting}[title=Algoritmo Stop and Wait - Receiver]
 void receiver() {
@@ -440,14 +436,14 @@ void receiver() {
 	}
 }
 \end{lstlisting}
+\cleardoublepage
 
-\begin{figure}[h]
+\begin{figure}[ht]
   \centering
   \includegraphics[width=.7\textwidth]{fluxogram_recivier}
   \caption{\label{fig:recivier}Fluxograma geral do algoritmo do receiver.}
 \end{figure}
 
-\cleardoublepage
 \subsection{Formato das mensagens}\label{Formato das mensagens}
 Para enviar mensagens utilizando o chip LoRa, é preciso seguir o formato:
 \begin{table}[h]
@@ -489,7 +485,7 @@ Sendo que:
     \item\textbf{Message}: os bytes da imagem
 \end{itemize}
 
-Porém caso o 1 byte, \textit{Type}, seja um ack não terá outros campos de cabeçalho apenas um outro byte dizendo qual parte de imagem está atrelado o ack.
+Porém caso o 1 byte, \textit{Type}, seja um ``ACK'' não terá outros campos de cabeçalho apenas um outro byte dizendo qual parte de imagem está atrelado o ``ACK''.
 
 Dessa forma foi implementado a seguinte estrutura de dados para enviar as imagens:
 
@@ -512,14 +508,11 @@ union ImagePart {
 };
 \end{lstlisting}
 
-
-\cleardoublepage
-
 \section{Resultados}\label{Resultados}
 
 A fim de avaliar o funcionamento da implementação foram realizados diversos testes, dando especial atenção para a forma como a resolução e a taxa de compressão da imagem influenciam no tamanho da mensagem enviada no payload. Os principais resultados são mostrados a continuação.
 
-No primeiro grupo de testes realizado o foco foi avaliar como a resolução da imagem influencia no tamanho em bytes da mensagem enviada. Para isso segui-se os seguintes critérios:
+No primeiro grupo de testes realizado o foco foi avaliar como a resolução da imagem influencia no tamanho em bytes da mensagem enviada. Para isso seguiu-se os seguintes critérios:
 \begin{itemize}
     \setlength\itemsep{0.01cm}
     \item 3 fotos por resolução escolhendo sempre a mediana.
@@ -544,7 +537,7 @@ Resolução (pixels) & Tamanho (bytes) \\ \midrule
 \label{tab:resolution}
 \end{table}
 
-No segundo grupo de testes o foco foi avaliar a taxa de compressão do JPEG, sendo assim seguiu-se os critérios supracitados porém mantendo a resolução fixa em 480x320 e alterando a a perda de qualidade da imagem.
+No segundo grupo de testes o foco foi avaliar a taxa de compressão do JPEG, sendo assim seguiu-se os critérios supracitados porém mantendo a resolução fixa em 480x320 e alterando a perda de qualidade da imagem.
 
 \begin{table}[!h]
 \centering
@@ -565,8 +558,6 @@ Qualidade (0--63) & Tamanho (bytes) \\ \midrule
 \end{table}
 
 Avaliando também a taxa de transmissão percebeu-se que utilizando o algoritmo \textit{stop and wait} cada troca de quadros demora aproximadamente 2 segundos sendo assim pode-se calcular o tempo médio de envio de cada imagem dependendo unicamente da quantidade de quadros que a mesma ocupa.
-
-\cleardoublepage
 
 \section{Conclusão}\label{Conclusão}
 Apesar de todas as limitações da tecnologia LoRa tais como velocidade de transmissão, direção do canal, ainda é possível transmitir pequenas e comprimidas imagens com alta latência.
