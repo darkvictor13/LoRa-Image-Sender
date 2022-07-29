@@ -141,7 +141,7 @@ void setup() {
 
 void loop() {
 	std::vector<ImagePart> image_parts;
-	//waitToTakePicture();
+	waitToTakePicture();
 	DEBUG_PRINTF("Tirando foto numero %d:\n", image_id);
 	auto picture = camera.takePicture();
 	printHexBuffer(picture->buf, picture->len);

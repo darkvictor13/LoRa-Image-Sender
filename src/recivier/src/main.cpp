@@ -164,7 +164,7 @@ void loop() {
 		return;
     }
 
-	Serial.printf("Mensagem %d recebida de %hu\n",buffer[2], received_id);
+	Serial.printf("Mensagem %d recebida do chip %hu\n",buffer[2], received_id);
 
 	const auto size_to_write = buffer_size - INDEX_BEGIN_IMAGE;
 	memcpy(img + img_size, buffer + INDEX_BEGIN_IMAGE, size_to_write);
