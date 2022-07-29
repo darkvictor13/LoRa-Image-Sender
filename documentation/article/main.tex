@@ -214,7 +214,7 @@ UNIOESTE
 \renewcommand{\resumoname}{Abstract}
 \begin{resumoumacoluna}
   \begin{otherlanguage*}{english}
-    Escrever resumo
+      Networks using communication via LoRa made it possible for devices to exchange messages over long distances and using little energy. Observing the data transfer limitations of these networks, this work implements a network for sending images using algorithms and techniques already consolidated in computer networks to send images in several parts and guarantee their integrity. Devices such as esp32 and esp32-cam were used to implement this network, which execute the stop and wait algorithm. Once the network is implemented, it can be observed that the average time for sending a LoRa message is 2 seconds, thus being able to send images of 6810 bytes in 1 minute.
     \vspace{\onelineskip}
     \noindent
 
@@ -476,6 +476,7 @@ Tendo uma quantidade máxima de 231 bytes para escrever os dados da imagem, opto
 \end{tabular}
 \end{table}
 
+\cleardoublepage
 Sendo que:
 \begin{itemize}
     \item\textbf{Type}: campo que indica como os próximos bytes devem ser interpretados, podendo ser um ACK, ou uma parte de imagem.
@@ -513,6 +514,7 @@ union ImagePart {
 A fim de avaliar o funcionamento da implementação foram realizados diversos testes, dando especial atenção para a forma como a resolução e a taxa de compressão da imagem influenciam no tamanho da mensagem enviada no payload. Os principais resultados são mostrados a continuação.
 
 No primeiro grupo de testes realizado o foco foi avaliar como a resolução da imagem influencia no tamanho em bytes da mensagem enviada. Para isso seguiu-se os seguintes critérios:
+\cleardoublepage
 \begin{itemize}
     \setlength\itemsep{0.01cm}
     \item 3 fotos por resolução escolhendo sempre a mediana.
