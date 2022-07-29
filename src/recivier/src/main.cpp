@@ -31,7 +31,7 @@ WebServer server;
 
 #if TCC_LEVI
 #include <HTTPClient.h>
-static const char server_hostname[] = "http://192.168.1.110:3001/upload";
+static const char server_hostname[] = "http://192.168.1.113:3001/upload";
 #endif
 
 void printHexBuffer(const uint8_t* buffer, uint8_t size) {
@@ -41,14 +41,10 @@ void printHexBuffer(const uint8_t* buffer, uint8_t size) {
     Serial.println();
 }
 
-void setupAp() {
+void setupWiFi() {
+#if !TCC_LEVI
 	const char* ssid_ap = "redeDoEsp";
 	const char* password_ap = "senhaSegura.";
-
-#if TCC_LEVI
-	const char* ssid_sta = "LabIoT";
-	const char* password_sta = "labiot2020.";
-#endif
 
 	// IP Address details
 	IPAddress local_ip(192, 168, 1, 1);
@@ -56,13 +52,16 @@ void setupAp() {
 	IPAddress subnet(255, 255, 255, 0);
 
 	// faz o esp crar um AP e conecta ao wifi
-	WiFi.mode(WIFI_AP_STA);
 	WiFi.softAP(ssid_ap, password_ap);
 	WiFi.softAPConfig(local_ip, gateway, subnet);
-#if TCC_LEVI
+#else
+	const char* ssid_sta = "LabIoT";
+	const char* password_sta = "labiot2020.";
+
 	WiFi.begin(ssid_sta, password_sta);
 	if (WiFi.waitForConnectResult() != WL_CONNECTED) {
 		Serial.println("Falha ao conectar ao Wifi");
+		delay(1000);
 		ESP.restart();
 	}else {
 		Serial.println("Conectado ao Wifi");
@@ -133,13 +132,14 @@ void setup() {
 	}else {
 		Serial.println("Arquivo não existe");
 	}
-	setupAp();
+	setupWiFi();
+#if !TCC_LEVI
     server.on("/lora_img", serveImg);
     server.on(UriBraces("/req_img/{}"), requestImg);
 	server.begin();
 	TaskHandle_t handle_server = NULL;
 	xTaskCreate(taskHandleServer, "server", 20000, NULL, 1, &handle_server);
-
+#endif
 	Serial.println("Iniciando LoRaMESH");
     SerialCommandsInit(9600);  //(rx_pin,tx_pin)
     if (LocalRead(&local_id, &localNet, &localUniqueId) != MESH_OK) {
@@ -210,4 +210,5 @@ void loop() {
 		file.close();
 		img_size = 0;
 	}
+	delay(5000);
 }

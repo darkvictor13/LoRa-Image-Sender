@@ -8,6 +8,7 @@
 #include "image_part.hpp"
 #include "message_types.hpp"
 #include "lora_definitions.hpp"
+#include "debug.h"
 
 /*
 	Como esta configurado o Lora:
@@ -33,9 +34,9 @@ Camera camera;
 
 void printHexBuffer(const uint8_t* buffer, uint8_t size) {
     for (uint8_t i = 0; i < size; i++) {
-        Serial.printf(" %02X", buffer[i]);
+        DEBUG_PRINTF(" %02X", buffer[i]);
     }
-    Serial.println();
+    DEBUG_PRINTF("\n");
 }
 
 void separate(std::vector<ImagePart> &image_parts, const uint8_t *buffer, size_t size) {
@@ -69,19 +70,18 @@ bool sendImagePart(ImagePart &part, const uint8_t id) {
 }
 
 void sendStopWait(std::vector<ImagePart> &image_parts) {
-
 	size_t i = 0;
 	const size_t img_parts_size = image_parts.size();
 	while (i < img_parts_size) {
-		Serial.printf("Enviando frame %03d\n", (int)image_parts[i].fields.part);
+		DEBUG_PRINTF("Enviando frame %03d\n", (int)image_parts[i].fields.part);
 		if (sendImagePart(image_parts[i], local_id)) {
-			Serial.println("enviado");
+			DEBUG_PRINTF("enviado\n");
 		} else {
-			Serial.println("não enviado");
+			DEBUG_PRINTF("não enviado\n");
 			continue;
 		}
 		Serial1.flush();
-		Serial.println("Esperando ACK");
+		DEBUG_PRINTF("Esperando ACK\n");
 		if (ReceivePacketCommand(
 			&received_id,
 			&received_command,
@@ -89,21 +89,21 @@ void sendStopWait(std::vector<ImagePart> &image_parts) {
 			&buffer_size,
 			(TIME_TO_RECEIVE_MESSAGE * 3)
 		) == MESH_ERROR) {
-			Serial.println("Não recebeu nada");
+			DEBUG_PRINTF("Não recebeu nada\n");
 			continue;
 		}
 
 		if (buffer[0] == ACK && buffer[1] == image_parts[i].fields.part) {
-			Serial.println("ACK recebido corretamente");
+			DEBUG_PRINTF("ACK recebido corretamente\n");
 			i++;
 		}else {
-			Serial.println("Mensagem recebida nao possui ACK");
+			DEBUG_PRINTF("Mensagem recebida nao possui ACK\n");
 		}
 	}
 }
 
 void waitToTakePicture() {
-	Serial.println("Esperando pela solicitação de tirar foto");
+	DEBUG_PRINTF("Esperando pela solicitação de tirar foto\n");
 	while (ReceivePacketCommand(
 		&received_id,
 		&received_command,
@@ -111,23 +111,22 @@ void waitToTakePicture() {
 		&buffer_size,
 		0xFFFFFFFF
 	) == MESH_ERROR) {
-		Serial.println("Não recebeu solicitação");
+		DEBUG_PRINTF("Não recebeu solicitação\n");
 		continue;
 	}
 }
 
 void setup() {
 	uint32_t local_unique_id;
-	Serial.begin(115200);
+	BEGIN_DEBUG;
 
-/*
-	Serial.println("Iniciando LoRaMESH");
+	DEBUG_PRINTF("Iniciando LoRaMESH\n");
 	SerialCommandsInit(9600);  //(rx_pin,tx_pin)
     if (LocalRead(&local_id, &local_net, &local_unique_id) != MESH_OK) {
-        Serial.println("Falha ao ler Parâmetros do LoRa");
+        DEBUG_PRINTF("Falha ao ler Parâmetros do LoRa\n");
     } else {
-        Serial.println("Sucesso ao ler Parâmetros do LoRa");
-        Serial.printf(
+        DEBUG_PRINTF("Sucesso ao ler Parâmetros do LoRa\n");
+        DEBUG_PRINTF(
 			"\tID: %hu\n\tNET: %hu\n\tUID: %u\n",
 			local_id,
 			local_net,
@@ -135,24 +134,23 @@ void setup() {
 		);
     }
     delay(2000);
-	*/
 
-	Serial.println("Iniciando Camera");
+	DEBUG_PRINTF("Iniciando Camera\n");
 	camera.init();
 }
 
 void loop() {
 	std::vector<ImagePart> image_parts;
-	waitToTakePicture();
-	Serial.printf("Tirando foto numero %d:\n", image_id);
+	//waitToTakePicture();
+	DEBUG_PRINTF("Tirando foto numero %d:\n", image_id);
 	auto picture = camera.takePicture();
 	printHexBuffer(picture->buf, picture->len);
 
 	separate(image_parts, picture->buf, picture->len);
-	Serial.printf("Total de partes: %d\n", image_parts.size());
+	DEBUG_PRINTF("Total de partes: %d\n", image_parts.size());
 	camera.freePicture(picture);
-	Serial.println("Iniciando o envio");
+	DEBUG_PRINTF("Iniciando o envio\n");
 	sendStopWait(image_parts);
-	Serial.println("Terminando o envio");
+	DEBUG_PRINTF("Terminando o envio\n");
 	image_id++;
 }
